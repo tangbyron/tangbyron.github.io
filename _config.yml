@@ -1,0 +1,92 @@
+# Site Configuration
+# Import the theme
+theme: jekyll-theme-chirpy
+
+# Basic Information
+lang: en
+timezone: America/Los_Angeles
+
+# Site metadata
+title: Byron Tang
+tagline: AI Engineering & Research
+description: >-
+  AI Engineer exploring continual learning for LLMs.
+  Documenting learnings in AI research and engineering.
+
+url: "https://tangbyron.github.io"
+github:
+  username: tangbyron
+
+# Social links
+social:
+  name: Byron Tang
+  links:
+    - https://github.com/tangbyron
+
+# Theme configuration
+avatar: /assets/img/avatar.jpg  # You can add your photo later
+
+# Sidebar
+toc: true
+
+# Comments (disabled for now, you can enable later)
+comments:
+  active: false
+
+# Math rendering (using MathJax)
+math: true
+
+# Code syntax highlighting
+highlighter: rouge
+
+# Pagination
+paginate: 10
+
+# Build settings
+markdown: kramdown
+kramdown:
+  math_engine: mathjax
+  syntax_highlighter: rouge
+
+# Collections
+collections:
+  tabs:
+    output: true
+    sort_by: order
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      comments: false
+      toc: true
+      permalink: /posts/:title/
+  - scope:
+      path: _tabs
+    values:
+      layout: page
+      permalink: /:title/
+
+sass:
+  style: compressed
+
+# Exclude from processing
+exclude:
+  - "*.gem"
+  - "*.gemspec"
+  - docs
+  - tools
+  - README.md
+  - LICENSE
+  - "*.config.js"
+  - package*.json
+  - BLOG_POST.md
+
+# Plugins
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-feed
+  - jekyll-paginate
