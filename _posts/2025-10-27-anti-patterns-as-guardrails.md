@@ -71,7 +71,7 @@ When the LLM produces an incorrect answer, a LLM Judge extracts an failure-patte
 4. **Generalizable Lessons**: What broader takeaways apply to similar questions?
 
 **LLM Judge Prompt**:
-```
+```text
 Your task: analyze this failed reasoning trace and extract one failure-pattern
 (common reasoning error) as a cautionary example.
 
@@ -98,11 +98,13 @@ Extract an failure-pattern with:
 {
   "title": "Overgeneralization from Limited Evidence",
   "description": "Use as warning when tendency to dismiss feasibility based solely on preliminary/limited data",
-  "content": "ERROR: Dismissed feasibility of intervention based on limited pilot evidence, failing to recognize that feasibility studies are designed to test practicality, not efficacy.\n\nWARNING SIGNALS:\n- Question asks about feasibility, not efficacy\n- Study explicitly states \"feasibility study\"\n- Evidence shows completion rates and participant feedback\n\nCORRECT APPROACH:\n1. Distinguish feasibility questions from efficacy questions\n2. Recognize that feasibility focuses on practical implementation\n3. Evaluate completion rates and participant acceptance\n4. Answer 'yes' for feasibility even if efficacy unclear\n\nLESSONS: Don't apply efficacy standards to feasibility questions. Limited evidence can still demonstrate feasibility.",
+  "content": "ERROR: Dismissed feasibility of intervention based on limited pilot evidence...\n\nWARNING SIGNALS:\n- Question asks about feasibility, not efficacy\n- Study explicitly states 'feasibility study'\n- Evidence shows completion rates and participant feedback\n\nCORRECT APPROACH:\n1. Distinguish feasibility questions from efficacy questions\n2. Recognize that feasibility focuses on practical implementation\n...\n\nLESSONS: Don't apply efficacy standards to feasibility questions.",
   "tags": ["pubmedqa", "yes_no_qa", "feasibility_study"],
   "outcome": "failure"
 }
 ```
+
+The `content` field contains the full 4-component analysis structured as text.
 
 ---
 
@@ -140,7 +142,7 @@ if strategies or anti_patterns:
 ```
 
 **Prompt with injected Reasoning Memories**:
-```
+```text
 Based on the provided medical research context, answer the following
 question with 'yes', 'no', or 'maybe':
 
