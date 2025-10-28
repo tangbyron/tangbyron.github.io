@@ -46,6 +46,8 @@ Thumbs.db
 reference/
 drafts/
 notes/
+notes-local/
+**/QUARTO_MIGRATION_NOTES.md
 
 # Logs
 *.log

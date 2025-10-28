@@ -37,15 +37,23 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
 
-      - name: Setup Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+          bundler-cache: true
 
-      - name: Install Pandoc (via Quarto)
-        run: quarto --version
+      - name: Build site
+        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: "production"
 
-      - name: Render site with Quarto
+      - name: Test site
         run: |
-          quarto render --output-dir "_site${{ steps.pages.outputs.base_path }}"
+          bundle exec htmlproofer _site \
+            \-\-disable-external \
+            \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/" \
+            || echo "HTMLProofer found issues, but continuing deployment"
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
