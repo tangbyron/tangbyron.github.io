@@ -1,0 +1,27 @@
+<!-- Custom CSS for code block formatting - embedded inline -->
+<style>
+/* Fix code block formatting with ultra-high specificity */
+main article div.content div.highlight > code,
+main article div.content div.highlight > pre,
+main article div.content div.highlight > pre > code,
+main article div.content .highlighter-rouge .highlight code,
+main article div.content .highlighter-rouge .highlight pre,
+article.px-1 div.content div.highlight code,
+article div.content div.highlighter-rouge code,
+div.highlight > code,
+div.highlight > pre,
+div.highlight > pre > code,
+.highlighter-rouge .highlight code,
+.highlighter-rouge .highlight pre,
+.content div.highlight code,
+.content div.highlight pre {
+  white-space: pre !important;
+  overflow-x: auto !important;
+  word-break: normal !important;
+  word-wrap: normal !important;
+  overflow-wrap: normal !important;
+  display: block !important;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
+  line-height: 1.6 !important;
+}
+</style>
