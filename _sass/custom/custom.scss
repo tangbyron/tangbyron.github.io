@@ -15,4 +15,14 @@ div.highlight > pre > code {
   tab-size: 2;           /* predictable tab indentation */
 }
 
+/* Stronger opt-in wrapper for stubborn blocks */
+.pre-wrap div.highlight > pre,
+.pre-wrap pre,
+.pre-wrap pre > code,
+.pre-wrap code {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
 
