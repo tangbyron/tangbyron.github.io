@@ -1,0 +1,17 @@
+/*
+ * Custom overrides for code blocks
+ * Goal: preserve whitespace/newlines and clean wrapping while
+ * keeping Chirpy's code header and copy button.
+ */
+
+.highlighter-rouge .highlight pre,
+.highlighter-rouge pre.highlight,
+div.highlight > pre,
+div.highlight > pre > code {
+  white-space: pre-wrap; /* preserve newlines and spaces, allow wrapping */
+  word-break: normal;    /* avoid breaking words arbitrarily */
+  overflow-x: auto;      /* fall back to horizontal scroll if needed */
+  tab-size: 2;           /* predictable tab indentation */
+}
+
+
