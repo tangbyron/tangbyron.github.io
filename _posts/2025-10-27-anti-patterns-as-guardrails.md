@@ -72,6 +72,7 @@ When the LLM produces an incorrect answer, a LLM Judge extracts an failure-patte
 4. **Generalizable Lessons**: What broader takeaways apply to similar questions?
 
 **LLM Judge Prompt**:
+{: .pre-wrap}
 
 ```plaintext
 Your task: analyze this failed reasoning trace and extract one failure-pattern
@@ -110,6 +111,7 @@ JSON Structure:
 ```
 
 Content Field (formatted):
+{: .pre-wrap}
 
 ```plaintext
 ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
@@ -168,6 +170,7 @@ if strategies or anti_patterns:
 ```
 
 **Prompt with injected Reasoning Memories**:
+{: .pre-wrap}
 
 ```plaintext
 Based on the provided medical research context, answer the following
@@ -230,6 +233,7 @@ This structure allows flexibility on the presence or absence of memories. One im
 ---
 
 ### Inference flow
+{: .pre-wrap}
 
 
 ```plaintext
