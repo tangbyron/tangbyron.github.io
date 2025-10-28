@@ -94,17 +94,38 @@ Extract an failure-pattern with:
 ```
 
 **Example failure-pattern Output**:
+
+JSON Structure:
 ```json
 {
   "title": "Overgeneralization from Limited Evidence",
   "description": "Use as warning when tendency to dismiss feasibility based solely on preliminary/limited data",
-  "content": "ERROR: Dismissed feasibility of intervention based on limited pilot evidence...\n\nWARNING SIGNALS:\n- Question asks about feasibility, not efficacy\n- Study explicitly states 'feasibility study'\n- Evidence shows completion rates and participant feedback\n\nCORRECT APPROACH:\n1. Distinguish feasibility questions from efficacy questions\n2. Recognize that feasibility focuses on practical implementation\n...\n\nLESSONS: Don't apply efficacy standards to feasibility questions.",
+  "content": "...",
   "tags": ["pubmedqa", "yes_no_qa", "feasibility_study"],
   "outcome": "failure"
 }
 ```
 
-The `content` field contains the full 4-component analysis structured as text.
+Content Field (formatted):
+```text
+ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
+failing to recognize that feasibility studies are designed to test practicality,
+not efficacy.
+
+WARNING SIGNALS:
+- Question asks about feasibility, not efficacy
+- Study explicitly states "feasibility study"
+- Evidence shows completion rates and participant feedback
+
+CORRECT APPROACH:
+1. Distinguish feasibility questions from efficacy questions
+2. Recognize that feasibility focuses on practical implementation
+3. Evaluate completion rates and participant acceptance
+4. Answer 'yes' for feasibility even if efficacy unclear
+
+LESSONS: Don't apply efficacy standards to feasibility questions.
+Limited evidence can still demonstrate feasibility.
+```
 
 ---
 
