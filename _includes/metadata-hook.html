@@ -24,4 +24,95 @@ div.highlight > pre > code,
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace !important;
   line-height: 1.6 !important;
 }
+
+/* Add padding to code blocks for professional spacing */
+div.highlight > code,
+.highlighter-rouge .highlight code {
+  padding: 1em !important;
+  padding-right: 1.5em !important; /* Extra space to avoid overlap with scrollbar */
+}
+
+/* Style the code header and copy button */
+.code-header {
+  background-color: rgba(128, 128, 128, 0.1) !important;
+  padding: 0.5em 1em !important;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+/* Make copy button more prominent and interactive */
+.code-header button {
+  opacity: 0.6 !important;
+  transition: opacity 0.2s ease !important;
+  cursor: pointer !important;
+  background: none !important;
+  border: none !important;
+  padding: 0.25em 0.5em !important;
+  border-radius: 4px !important;
+  color: inherit !important;
+}
+
+.code-header button:hover {
+  opacity: 1 !important;
+  background-color: rgba(128, 128, 128, 0.15) !important;
+}
+
+/* Success state for copy button */
+.code-header button.copied {
+  color: #28a745 !important;
+}
+
+/* Label styling */
+.code-header span[data-label-text] {
+  font-size: 0.875em !important;
+  opacity: 0.7 !important;
+}
 </style>
+
+<script>
+// Copy to clipboard functionality for code blocks
+document.addEventListener('DOMContentLoaded', function() {
+  const copyButtons = document.querySelectorAll('.code-header button[aria-label="copy"]');
+  
+  copyButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // Find the code block associated with this button
+      const codeBlock = this.closest('.highlighter-rouge').querySelector('code');
+      if (!codeBlock) return;
+      
+      const textToCopy = codeBlock.textContent;
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        // Visual feedback
+        const originalHTML = this.innerHTML;
+        this.classList.add('copied');
+        this.innerHTML = '<i class="fas fa-check"></i>';
+        
+        // Show success tooltip
+        const originalTitle = this.getAttribute('aria-label');
+        this.setAttribute('aria-label', this.getAttribute('data-title-succeed') || 'Copied!');
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+          this.classList.remove('copied');
+          this.innerHTML = originalHTML;
+          this.setAttribute('aria-label', originalTitle);
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback: show error state briefly
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-times"></i>';
+        setTimeout(() => {
+          this.innerHTML = originalHTML;
+        }, 2000);
+      });
+    });
+  });
+});
+</script>
