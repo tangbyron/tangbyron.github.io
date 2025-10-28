@@ -9,8 +9,9 @@
 div.highlight > pre,
 div.highlight > pre > code {
   white-space: pre-wrap; /* preserve newlines and spaces, allow wrapping */
-  word-break: normal;    /* avoid breaking words arbitrarily */
-  overflow-x: auto;      /* fall back to horizontal scroll if needed */
+  overflow-wrap: anywhere; /* allow breaking long tokens (URLs/long words) */
+  word-break: break-word;  /* ensure break opportunities */
+  overflow-x: auto;        /* fall back to horizontal scroll if needed */
   tab-size: 2;           /* predictable tab indentation */
 }
 
