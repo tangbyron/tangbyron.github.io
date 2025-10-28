@@ -50,6 +50,13 @@ kramdown:
   syntax_highlighter: rouge
   syntax_highlighter_opts:
     guess_lang: false
+    block:
+      line_numbers: false
+    span:
+      line_numbers: false
+  hard_wrap: false
+  parse_block_html: true
+  parse_span_html: false
 
 # Collections
 collections:
