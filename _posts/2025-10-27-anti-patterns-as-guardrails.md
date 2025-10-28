@@ -5,6 +5,7 @@ categories: [Memory, Reason]
 tags: [llm, memory, reasoning, pubmedqa]
 math: true
 toc: true
+render_with_liquid: false
 ---
 
 ## TLDR
@@ -71,7 +72,7 @@ When the LLM produces an incorrect answer, a LLM Judge extracts an failure-patte
 4. **Generalizable Lessons**: What broader takeaways apply to similar questions?
 
 **LLM Judge Prompt**:
-```text
+```plaintext
 Your task: analyze this failed reasoning trace and extract one failure-pattern
 (common reasoning error) as a cautionary example.
 
@@ -107,7 +108,7 @@ JSON Structure:
 ```
 
 Content Field (formatted):
-```text
+```plaintext
 ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
 failing to recognize that feasibility studies are designed to test practicality,
 not efficacy.
@@ -163,7 +164,7 @@ if strategies or anti_patterns:
 ```
 
 **Prompt with injected Reasoning Memories**:
-```text
+```plaintext
 Based on the provided medical research context, answer the following
 question with 'yes', 'no', or 'maybe':
 
@@ -225,7 +226,7 @@ This structure allows flexibility on the presence or absence of memories. One im
 
 ### Inference flow
 
-```text
+```plaintext
 Input
   │
 Retriever ──► Top‑k Memories

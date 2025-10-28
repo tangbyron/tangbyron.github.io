@@ -45,8 +45,11 @@ paginate: 10
 # Build settings
 markdown: kramdown
 kramdown:
+  input: GFM
   math_engine: mathjax
   syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    guess_lang: false
 
 # Collections
 collections:
