@@ -72,6 +72,7 @@ When the LLM produces an incorrect answer, a LLM Judge extracts an failure-patte
 4. **Generalizable Lessons**: What broader takeaways apply to similar questions?
 
 **LLM Judge Prompt**:
+
 ```plaintext
 Your task: analyze this failed reasoning trace and extract one failure-pattern
 (common reasoning error) as a cautionary example.
@@ -97,6 +98,7 @@ Extract an failure-pattern with:
 **Example failure-pattern Output**:
 
 JSON Structure:
+
 ```json
 {
   "title": "Overgeneralization from Limited Evidence",
@@ -108,6 +110,7 @@ JSON Structure:
 ```
 
 Content Field (formatted):
+
 ```plaintext
 ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
 failing to recognize that feasibility studies are designed to test practicality,
@@ -135,6 +138,7 @@ Limited evidence can still demonstrate feasibility.
 **Purpose**: Inject **both** success patterns AND failure-patterns with distinct formatting
 
 **Code Implementation**:
+
 ```python
 # Inject success pattern (if retrieved)
 if strategies and len(strategies) > 0:
@@ -164,6 +168,7 @@ if strategies or anti_patterns:
 ```
 
 **Prompt with injected Reasoning Memories**:
+
 ```plaintext
 Based on the provided medical research context, answer the following
 question with 'yes', 'no', or 'maybe':
@@ -225,6 +230,7 @@ This structure allows flexibility on the presence or absence of memories. One im
 ---
 
 ### Inference flow
+
 
 ```plaintext
 Input
