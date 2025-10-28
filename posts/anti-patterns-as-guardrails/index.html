@@ -1,0 +1,82 @@
+---
+layout: page
+title: Exploring Continuous Learning: Reasoning Bank + Recursive Language Models
+permalink: /posts/anti-patterns-as-guardrails/
+---
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+  .md-container {
+    max-width: 100%;
+  }
+  .md-container pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 2;
+  }
+  .copy-btn {
+    position: absolute;
+    right: .5rem;
+    top: .5rem;
+    background: var(--bs-gray-800, #2d333b);
+    color: #fff;
+    border: none;
+    padding: .2rem .4rem;
+    border-radius: .25rem;
+    cursor: pointer;
+    font-size: .8rem;
+  }
+  .code-wrap { position: relative; }
+</style>
+
+<div id="md-root" class="md-container"></div>
+
+<script>
+  // Fetch the original markdown from the post in _posts and render it client-side.
+  // We keep the authoritative source in the Markdown file.
+  (async function() {
+    const res = await fetch('/_posts/2025-10-27-anti-patterns-as-guardrails.md');
+    const text = await res.text();
+    // Strip YAML front-matter if present
+    const body = text.replace(/^---[\s\S]*?---\n?/, '');
+    // Configure marked with highlight.js
+    marked.setOptions({
+      highlight: function(code, lang) {
+        try {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          }
+        } catch (e) {}
+        return hljs.highlightAuto(code).value;
+      }
+    });
+    const html = marked.parse(body);
+    const root = document.getElementById('md-root');
+    root.innerHTML = html;
+
+    // Add copy buttons to code blocks
+    document.querySelectorAll('pre > code').forEach((codeEl) => {
+      const pre = codeEl.parentElement;
+      const wrap = document.createElement('div');
+      wrap.className = 'code-wrap';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(codeEl.textContent);
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 1200);
+        } catch (e) {}
+      });
+      wrap.appendChild(btn);
+    });
+  })();
+</script>
+
+
