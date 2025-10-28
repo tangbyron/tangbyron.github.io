@@ -82,6 +82,11 @@ defaults:
 sass:
   style: compressed
 
+# Disable HTML compression to preserve code block formatting
+compress_html:
+  ignore:
+    envs: [development, production]
+
 # Exclude from processing
 exclude:
   - "*.gem"

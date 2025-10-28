@@ -1,48 +1,17 @@
-/*
- * Custom overrides for code blocks
- * Goal: preserve whitespace/newlines and clean wrapping while
- * keeping Chirpy's code header and copy button.
+/* 
+ * Custom CSS for code block formatting
+ * This file is automatically included by the Chirpy theme
  */
 
-/* Base styles for all code blocks */
-.highlighter-rouge .highlight pre,
-.highlighter-rouge pre.highlight,
+/* Fix for code blocks to preserve line breaks and formatting */
+div.highlight > code,
 div.highlight > pre,
-div.highlight > pre > code {
-  white-space: pre; /* No wrapping, preserves everything */
-  overflow-x: auto; /* Horizontal scroll */
-  tab-size: 4; /* Standard tab size */
+div.highlight > pre > code,
+.highlighter-rouge .highlight code,
+.highlighter-rouge .highlight pre {
+  white-space: pre !important;
+  overflow-x: auto !important;
+  word-break: normal !important;
+  word-wrap: normal !important;
+  display: block !important;
 }
-
-/* Comment out .pre-wrap to disable wrapping */
-// .pre-wrap div.highlight > pre,
-// .pre-wrap pre,
-// .pre-wrap pre > code,
-// .pre-wrap code {
-//   white-space: pre-wrap !important;
-//   overflow-wrap: anywhere !important;
-//   word-break: normal !important;
-//   padding-left: 2em;
-//   text-indent: -2em;
-//   line-height: 1.5;
-//   box-decoration-break: clone;
-// }
-
-/* Custom Rouge highlighting for dark mode (high contrast) */
-.theme-dark .highlight {
-  background: #1a1a1a; /* Darker background */
-  color: #f8f8f2; /* Default text */
-  
-  .c { color: #75715e; } /* Comments */
-  .err { color: #f92672; background: #1a1a1a; } /* Errors */
-  .k { color: #66d9ef; } /* Keywords */
-  .o { color: #f92672; } /* Operators */
-  .p { color: #f8f8f2; } /* Punctuation */
-  .n { color: #f8f8f2; } /* Names */
-  .s { color: #e6db74; } /* Strings */
-  .m { color: #ae81ff; } /* Numbers */
-  .hll { background: #333; } /* Highlight line */
-  /* Add more classes if needed from Rouge docs */
-}
-
-
