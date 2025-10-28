@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Byron Tang"
+  navbar:
+    left:
+      - text: Home
+        href: index.html
+      - text: About
+        href: about/index.html
+  page-navigation: true
+
+format:
+  html:
+    theme: github
+    toc: true
+    toc-location: right
+    code-tools: true     # copy button
+    code-fold: false
+    highlight-style: github
+    smooth-scroll: true
+
+execute:
+  freeze: auto
+
