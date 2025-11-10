@@ -69,6 +69,21 @@ div.highlight > code,
   font-size: 0.875em !important;
   opacity: 0.7 !important;
 }
+
+/* Mermaid diagrams - white background for readability in both themes */
+.mermaid {
+  background-color: white !important;
+  padding: 2em !important;
+  margin: 1.5em 0 !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  text-align: center !important;
+}
+
+.mermaid svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
 </style>
 
 <script>
@@ -115,4 +130,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script defer>
+(function() {
+  function transformAndRenderMermaid() {
+    // Replace Rouge-wrapped mermaid blocks with <div class="mermaid">...</div>
+    document.querySelectorAll('div.language-mermaid').forEach(function(wrapper) {
+      var codeEl = wrapper.querySelector('pre code');
+      if (!codeEl) return;
+      var container = document.createElement('div');
+      container.className = 'mermaid';
+      container.textContent = (codeEl.textContent || '').trim();
+      wrapper.replaceWith(container);
+    });
+
+    // Fallback: handle <pre><code class="language-mermaid">...</code></pre>
+    document.querySelectorAll('pre > code.language-mermaid').forEach(function(code) {
+      var pre = code.parentElement;
+      if (!pre) return;
+      var container = document.createElement('div');
+      container.className = 'mermaid';
+      container.textContent = (code.textContent || '').trim();
+      pre.replaceWith(container);
+    });
+
+    if (window.mermaid) {
+      try {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        window.mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: isDark ? 'dark' : 'default'
+        });
+        window.mermaid.run({ querySelector: '.mermaid' });
+      } catch (e) {
+        console.error('Mermaid initialization failed:', e);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', transformAndRenderMermaid);
+  } else {
+    transformAndRenderMermaid();
+  }
+})();
 </script>

@@ -47,7 +47,9 @@ reference/
 drafts/
 notes/
 notes-local/
+.cursor/
 **/QUARTO_MIGRATION_NOTES.md
+README.md
 
 # Logs
 *.log
