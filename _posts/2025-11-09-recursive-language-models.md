@@ -12,11 +12,11 @@ render_with_liquid: false
 
 Building off of the great post on [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/), I ran a similar experiment, and found that RLM with sub-LM summarization and reflection achieved a 2.5X increase in accuracy (10% -> 25%, using Gemini Flash 2.5) on [BrowseComp Plus](https://arxiv.org/abs/2508.06600), compared to a ReAct baseline using the same search tool (BM25).
 
-The key insight is that we are able to reduce context rot for the root-LM, by delegating document processing, summarization, and reflection to the sub-LM (depth == 1). Instead of the ReAct agent continuously appending documents and growing context at a rapid rate (10 documents per search, truncate to first 512 tokens, 15 iterations = 77K tokens), the sub-LM is able to limit context growth per iteration to ~500 tokens, a 10X reduction that significantly improve its ability to answer the multi-hop research question. Interestingly, document evidence recall was around the same for ReAct and RLM (~32%), further demonstrating that the improvement is from reducing context rot, rather than improving retrieval.
+The key insight is that we are able to reduce context rot for the root-LM, by delegating document processing, summarization, and reflection to the sub-LM (depth == 1). Instead of the ReAct agent continuously appending documents and growing context at a rapid rate (10 documents per search, truncate to first 512 tokens, 15 iterations = 77K tokens), the sub-LM is able to limit context growth per iteration to ~500 tokens, a 10× reduction that significantly improves its ability to answer the multi-hop research question. Interestingly, document evidence recall was around the same for ReAct and RLM (~32%), further demonstrating that the improvement is from reducing context rot, rather than improving retrieval.
 
-Another key factor of reducing context rot is traversing the search more efficiently. I observed a 13% decrease in median number of searches per query from 8.95 in ReAct to 7.75 in RLM. From ablations, the sub-LM's reflections on the hypothesis from the root-LM, and ability to offer suggestions on the search query, is a significant step up from a simple tool output that the root-LM would see in ReAct.
+Another key factor of reducing context rot is traversing the search more efficiently. I observed a 13% decrease in average number of searches per query from 8.95 in ReAct to 7.75 in RLM. From ablations, the sub‑LM’s reflections on the hypothesis and suggested query refinements were a significant step up from the simple tool outputs the root‑LM sees in ReAct.
 
-The downside is that the RLM process is roughly 2.6x slower (per query median of 203s vs 79s). Parallelization could help this, but its not entirely obvious that this is the silver bullet, since multi-hop research is sequential in nature. Future experiments will focus on the combination of RLM and Memory Bank, so the agent is able to traverse through search iterations more efficiently, to reduce overall processing time and context.
+The downside is that the RLM process is roughly 2.6× slower (per‑query average of 203s vs 79s). Parallelization could help, but it’s not obviously a silver bullet given the sequential nature of multi‑hop research. Future experiments will combine RLM with a Memory Bank to reduce processing time and context.
 
 ---
 
@@ -38,9 +38,9 @@ Shoutout to the authors for putting the dataset together, I found it very cool t
 
 ### Synthetic Example
 
-Since the BrowseComp Plus team requested not sharing actual queries, here's a representative synthetic example:
+Per the dataset card’s policy (“BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN TEXT ONLINE” [HF dataset card](https://huggingface.co/datasets/Tevatron/browsecomp-plus)), here’s a representative synthetic example (not from the benchmark):
 
-> **query**: "Identify the 2012-2016 sci-fi short story that won a major award, is set on a tidally-locked planet, and whose author later chaired the Nebula Awards."
+> **query**: "Identify the 2012–2016 sci‑fi short story that won a major award, is set on a tidally‑locked planet, and whose author later chaired the Nebula Awards."
 >
 > **multi-hop challenges**:
 > 1. Search for award-winning sci-fi stories (2012-2016)
@@ -126,7 +126,7 @@ Using **Gemini 2.5 Flash** (knowledge cutoff of Jan 2025, pre-dating BrowseComp 
 - Average 9.8 iterations
 - Average time: 79.25s per query
 
-Yay, a non-zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original [BrowseComp Plus](https://arxiv.org/abs/2508.06600) paper. I'm sure there was some more prompt tuning for the paper, but since thats not the primary objective of this experiment, I just went with a somewhat generic deep research prompt.
+It was encouraging to see non‑zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original [BrowseComp Plus](https://arxiv.org/abs/2508.06600) paper. I'm sure there was some more prompt tuning for the paper, but since thats not the primary objective of this experiment, I just went with a generic deep research prompt.
 
 I repeated the ReAct baseline a few times, the key issue is the linear context accumulation, since each iteration simply appends the search results to the context:
 - Iteration 1: 5,120 tokens (10 docs × 512 tokens)
@@ -163,7 +163,7 @@ sequenceDiagram
   RootLM-->>User: Final answer (+ cited docids)
 ```
 
-The sub-LM is responsible for reviewing all of the documents, comparing it against the original query from BrowseComp, the search query and hypothesis from the root-LM. Its able to summarize the information, and also reflect and provide feedback back to the root-LM on how to update its query. It condenses the output to ~500 tokens, which means 10X decrease in tokens for the root-LM, as it iterates through the research process.
+The sub-LM is responsible for reviewing all of the documents, comparing it against the original query from BrowseComp, the search query and hypothesis from the root-LM. It’s able to summarize the information, reflect, and provide feedback to the root‑LM on how to update its query. It condenses the output to ~500 tokens, which means 10X decrease in tokens for the root-LM, as it iterates through the research process.
 
 ### Root-LM and Sub-LM interaction
 
