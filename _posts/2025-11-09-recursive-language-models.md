@@ -126,7 +126,7 @@ Using **Gemini 2.5 Flash** (knowledge cutoff of Jan 2025, pre-dating BrowseComp 
 - Average 9.8 iterations
 - Average time: 79.25s per query
 
-It was encouraging to see non‑zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original [BrowseComp Plus](https://arxiv.org/abs/2508.06600) paper. I'm sure there was some more prompt tuning for the paper, but since thats not the primary objective of this experiment, I just went with a generic deep research prompt.
+It was encouraging to see non‑zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original [BrowseComp Plus](https://arxiv.org/abs/2508.06600) paper. I'm sure there was some more prompt tuning for the paper, but since that's not the primary objective of this experiment, I just went with a generic deep research prompt.
 
 I repeated the ReAct baseline a few times, the key issue is the linear context accumulation, since each iteration simply appends the search results to the context:
 - Iteration 1: 5,120 tokens (10 docs × 512 tokens)
@@ -226,7 +226,7 @@ def build_feedback_prompt_v2(..., leading_hypothesis):
 
 ### Results
 
-Accuracy of 25%, a roughly 2.5X improvement over ReAct. A huge caveat is that this is only on 20 queries, repeated over multiple runs of the experiment. Its a bit expensive to run these experiments (already used up about $100 of Gemini credits), and there's more low hanging fruits to explore in the RLM framework, so I'll stop at 20 for now.
+Accuracy of 25%, a roughly 2.5X improvement over ReAct. A huge caveat is that this is only on 20 queries, repeated over multiple runs of the experiment. It's a bit expensive to run these experiments (already used up about $100 of Gemini credits), and there's more low hanging fruits to explore in the RLM framework, so I'll stop at 20 for now.
 
 | Metric | Single BM25 | ReAct | RLM | Change (ReAct→RLM) |
 |--------|-------------|-------|--------|-------------------|

@@ -56,7 +56,7 @@ It was quite amazing to see how creative the Root-LM was. From reading through t
 
 In the system prompt, we provide research heuristics like "go broad and then narrow". Sounds easy to do, but hard when the agent is bound to using search tools turn by turn.
 With code execution, it's suddenly possible! The code below allows the agent to review 500 docs in 1.3 seconds.
-Theres something...magically pragmatic to see the LLM implement code to "count" the number of authors, to satisfy the search requirement. Not very elegant, but it works!
+There's something...magically pragmatic to see the LLM implement code to "count" the number of authors, to satisfy the search requirement. Not very elegant, but it works!
 
 ```python
 results = bm25_search('article online learning educational technology platform teaching methods digital classroom 2010 2011 2012 2013 2014 2015 2016', bm25, docids, k=500)
@@ -89,7 +89,7 @@ for doc_id, score in results:
 
 **Task**: Extracting an athlete's height from a sports database with fallback to broader search.
 
-This pattern occurred a lot, the Root-LM was able to quickly test a hypothesis, but instead of waiting another turn to pivot, it adds a "self healing" fallback step to search more. Again, amusing to see it use code to do some derivation (m to cm) and math. (BrowseComp Plus has a lot of queries requiring derviations like "this institution was open for 671 days", and the LLM has to compile lists of potential start/close dates and derive to see if its a match. Fun dataset!)
+This pattern occurred a lot, the Root-LM was able to quickly test a hypothesis, but instead of waiting another turn to pivot, it adds a "self healing" fallback step to search more. Again, amusing to see it use code to do some derivation (m to cm) and math. (BrowseComp Plus has a lot of queries requiring derivations like "this institution was open for 671 days", and the LLM has to compile lists of potential start/close dates and derive to see if it's a match. Fun dataset!)
 
 ```python
 athlete_doc_id = 'doc12345'

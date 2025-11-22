@@ -60,11 +60,11 @@ Most AI systems only learn from successes. But what if the LLM can learn from bo
 
 ## Learning from Failure
 
-An failure-pattern is a structured analysis of a reasoning and prediction failure
+A failure-pattern is a structured analysis of a reasoning and prediction failure
 
 ### Extraction
 
-When the LLM produces an incorrect answer, a LLM Judge extracts an failure-pattern with these components:
+When the LLM produces an incorrect answer, an LLM Judge extracts a failure-pattern with these components:
 
 1. **Error Identification**: What specific reasoning error occurred?
 2. **Warning Signals**: What indicators should have been noticed?
@@ -83,7 +83,7 @@ Outcome: failure
 Ground truth: {correct_answer}
 Model answer: {wrong_answer}
 
-Extract an failure-pattern with:
+Extract a failure-pattern with:
 1. Title: Short name for the error (e.g., "Overgeneralization from Limited Evidence")
 2. Description: One-sentence summary of when this error occurs
 3. Content: 4-component analysis:
