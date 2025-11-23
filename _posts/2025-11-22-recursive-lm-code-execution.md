@@ -10,6 +10,9 @@ render_with_liquid: false
 
 _This is Part 3 in an ongoing series on continual learning for LLM agents: from [Reasoning Banks](https://tangbyron.github.io/posts/anti-patterns-as-guardrails/) → [Recursive Language Models](https://tangbyron.github.io/posts/recursive-language-models/) → RLM + Code Execution._
 
+![RLM + Code Execution Overview](/assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg)
+_Visual summary of the architecture and key code patterns_
+
 ## Main takeaway
 
 Combining Code Execution with Recursive Language Models (RLM) achieved **60% accuracy** on [BrowseComp Plus](https://arxiv.org/abs/2508.06600) in small-scale experiments with Gemini 2.5 Flash, all without using embeddings. This is a 6X improvement compared to using the ReAct agent design, and is in the same ballpark as the BM25 only configurations of o3 and GPT-5 on the public [leaderboard](https://huggingface.co/spaces/Tevatron/BrowseComp-Plus). I want to emphasize that these are still just directionally correct early findings, since I'm running on small sample sizes. Given the costly nature of testing various experiments (lots of tokens!), I prioritized rapid architecture experimentation, vs running on the entire corpus.
