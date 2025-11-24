@@ -1,3 +1,14 @@
+<!-- Open Graph and Twitter Card for social media previews -->
+{% if page.og_image %}
+  <meta property="og:image" content="{{ page.og_image }}">
+  <meta name="twitter:image" content="{{ page.og_image }}">
+  <meta name="twitter:card" content="summary_large_image">
+{% endif %}
+{% if page.description %}
+  <meta property="og:description" content="{{ page.description }}">
+  <meta name="twitter:description" content="{{ page.description }}">
+{% endif %}
+
 <!-- Custom CSS for code block formatting - embedded inline -->
 <style>
 /* Fix code block formatting with ultra-high specificity */
