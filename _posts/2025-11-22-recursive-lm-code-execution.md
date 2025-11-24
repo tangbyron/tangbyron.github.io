@@ -134,10 +134,10 @@ athlete_text = get_doc_text(athlete_doc_id, corpus_dict)
 height_pattern = r'height:\s*(\d\.\d{2})\s*m'
 height_match = re.search(height_pattern, athlete_text, re.IGNORECASE)
 
-if height_match:
+if height*match:
 height_m = float(height_match.group(1))
-height_cm = height_m _ 100
-print(f"Athlete's height: {height_cm:.2f} cm")
+height_cm = height_m * 100
+print(f"Athlete's height: {height*cm:.2f} cm")
 else:
 print("Height information not found in doc12345. Expanding search.") # Fallback: broader search
 results = bm25_search('professional athlete height statistics', bm25, docids, k=10)
@@ -146,7 +146,7 @@ text = get_doc_text(doc_id, corpus_dict)
 height_match = re.search(height_pattern, text, re.IGNORECASE)
 if height_match:
 height_m = float(height_match.group(1))
-height_cm = height_m _ 100
+height_cm = height_m * 100
 print(f"Athlete's height found in {doc_id}: {height_cm:.2f} cm")
 break
 {% endhighlight %}
