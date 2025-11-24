@@ -32,13 +32,13 @@ The journey: 0% (single BM25 search + LLM) -> 10% (ReAct + BM25) -> 25% (RLM + B
 
 Building on my [previous post on Recursive Language Models](https://tangbyron.github.io/posts/recursive-language-models/), here's the progression:
 
-| Variant                                                | Accuracy (approx) |
-|--------------------------------------------------------|-------------------|
-| Single BM25                                            | 0%                |
-| ReAct                                                  | 10%               |
-| RLM + BM25                                             | 25%               |
-| RLM + BM25 + Regex and Keyword Scan                    | 35–40%            |
-| RLM + BM25 + Regex and Keyword Scan + Code Execution   | 60%               |
+| Variant                                              | Accuracy (approx) |
+| ---------------------------------------------------- | ----------------- |
+| Single BM25                                          | 0%                |
+| ReAct                                                | 10%               |
+| RLM + BM25                                           | 25%               |
+| RLM + BM25 + Regex and Keyword Scan                  | 35–40%            |
+| RLM + BM25 + Regex and Keyword Scan + Code Execution | 60%               |
 
 ---
 
@@ -66,18 +66,18 @@ There's something...magically pragmatic to see the LLM implement code to "count"
 
 {% highlight python %}
 results = bm25_search(
-    'article online learning educational technology platform teaching methods '
-    'digital classroom 2010 2011 2012 2013 2014 2015 2016',
-    bm25,
-    docids,
-    k=500,
+'article online learning educational technology platform teaching methods '
+'digital classroom 2010 2011 2012 2013 2014 2015 2016',
+bm25,
+docids,
+k=500,
 )
 
 found_articles = []
 for doc_id, score in results:
-    text = get_doc_text(doc_id, corpus_dict)
-    if not text:
-        continue
+text = get_doc_text(doc_id, corpus_dict)
+if not text:
+continue
 
     # Check for publication year between 2011 and 2015
     pub_year = None
@@ -116,7 +116,9 @@ for doc_id, score in results:
             found_articles.append(
                 {'doc_id': doc_id, 'year': pub_year, 'authors_snippet': author_count_match.group(0)}
             )
+
 {% endhighlight %}
+
 ### Pattern 2: Adaptive Fallback Strategy
 
 **Task**: Extracting an athlete's height from a sports database with fallback to broader search.
@@ -128,52 +130,51 @@ athlete_doc_id = 'doc12345'
 athlete_text = get_doc_text(athlete_doc_id, corpus_dict)
 
 # Try specific document first
+
 height_pattern = r'height:\s*(\d\.\d{2})\s*m'
 height_match = re.search(height_pattern, athlete_text, re.IGNORECASE)
 
 if height_match:
-    height_m = float(height_match.group(1))
-    height_cm = height_m * 100
-    print(f"Athlete's height: {height_cm:.2f} cm")
+height_m = float(height_match.group(1))
+height_cm = height_m _ 100
+print(f"Athlete's height: {height_cm:.2f} cm")
 else:
-    print("Height information not found in doc12345. Expanding search.")
-    # Fallback: broader search
-    results = bm25_search('professional athlete height statistics', bm25, docids, k=10)
-    for doc_id, score in results:
-        text = get_doc_text(doc_id, corpus_dict)
-        height_match = re.search(height_pattern, text, re.IGNORECASE)
-        if height_match:
-            height_m = float(height_match.group(1))
-            height_cm = height_m * 100
-            print(f"Athlete's height found in {doc_id}: {height_cm:.2f} cm")
-            break
+print("Height information not found in doc12345. Expanding search.") # Fallback: broader search
+results = bm25_search('professional athlete height statistics', bm25, docids, k=10)
+for doc_id, score in results:
+text = get_doc_text(doc_id, corpus_dict)
+height_match = re.search(height_pattern, text, re.IGNORECASE)
+if height_match:
+height_m = float(height_match.group(1))
+height_cm = height_m _ 100
+print(f"Athlete's height found in {doc_id}: {height_cm:.2f} cm")
+break
 {% endhighlight %}
 
 ### Pattern 3: Parallel Information Gathering + Sub-LM Compression
 
 **Task**: Comparing exhibition space and visitor capacity across multiple museums.
 
-The agent tested multiple hypotheses in parallel, and batched document retrieval. Retrieved 15 documents (14,797 characters) in a single execution, triggered Sub-LM compression, which condensed it to 1,630 characters (~9x reduction). In this case, the Sub-LM summary directly contained the correct answer. 
+The agent tested multiple hypotheses in parallel, and batched document retrieval. Retrieved 15 documents (14,797 characters) in a single execution, triggered Sub-LM compression, which condensed it to 1,630 characters (~9x reduction). In this case, the Sub-LM summary directly contained the correct answer.
 
 {% highlight python %}
 doc_ids_museum_a_area = bm25_search(
-    'Metropolitan Museum exhibition space square feet', bm25, docids, k=5
+'Metropolitan Museum exhibition space square feet', bm25, docids, k=5
 )
 doc_ids_museum_b_area = bm25_search(
-    'British Museum gallery area square feet', bm25, docids, k=5
+'British Museum gallery area square feet', bm25, docids, k=5
 )
 doc_ids_museum_c_capacity = bm25_search(
-    'Louvre Museum daily visitor capacity', bm25, docids, k=5
+'Louvre Museum daily visitor capacity', bm25, docids, k=5
 )
 
 for doc_id in doc_ids_museum_a_area:
-    print(f'[{doc_id}]: {get_doc_text(doc_id, corpus_dict)}')
-    # ... (repeat for other museums)
+print(f'[{doc_id}]: {get_doc_text(doc_id, corpus_dict)}') # ... (repeat for other museums)
 {% endhighlight %}
 
 ### Error handling
 
-I did want to note that code execution was only successful 78% of the time, failures were typically due to overly complex regex patterns. In the case of failure, the error was passed back to the Root-LM, and triggered a retry that was typically successful. 
+I did want to note that code execution was only successful 78% of the time, failures were typically due to overly complex regex patterns. In the case of failure, the error was passed back to the Root-LM, and triggered a retry that was typically successful.
 
 ### Sandbox Constraints
 
@@ -236,8 +237,8 @@ This aligns with Anthropic's [Agent Skills](https://www.anthropic.com/engineerin
 
 ---
 
-*This work builds on [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) by Alex Zhang, Anthropic's [code execution research](https://www.anthropic.com/engineering/code-execution-with-mcp), and the [BrowseComp Plus dataset](https://arxiv.org/html/2508.06600v1).*
+_This work builds on [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) by Alex Zhang, Anthropic's [code execution research](https://www.anthropic.com/engineering/code-execution-with-mcp), and the [BrowseComp Plus dataset](https://arxiv.org/html/2508.06600v1)._
 
-*Views are strictly my own. Experiments based only on public datasets. Code examples have been genericized to respect the BrowseComp Plus dataset policy ("BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN TEXT ONLINE").*
+_Views are strictly my own. Experiments based only on public datasets. Code examples have been genericized to respect the BrowseComp Plus dataset policy ("BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN TEXT ONLINE")._
 
-*Published: November 22, 2025*
+_Published: November 22, 2025_

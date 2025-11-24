@@ -45,6 +45,7 @@ Per the dataset card’s policy (“BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN 
 > **query**: "Identify the 2012–2016 sci‑fi short story that won a major award, is set on a tidally‑locked planet, and whose author later chaired the Nebula Awards."
 >
 > **multi-hop challenges**:
+>
 > 1. Search for award-winning sci-fi stories (2012-2016)
 > 2. Filter by setting (tidally-locked planet)
 > 3. Cross-reference author's later career (Nebula chair)
@@ -57,11 +58,12 @@ Per the dataset card’s policy (“BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN 
 **Setup**: The simplest possible approach. Execute one BM25 search with k=20 documents, truncate each to the first 512 tokens, pass directly to Gemini 2.5 Flash, and ask for the final answer.
 
 **Results**:
+
 - **Accuracy: 0% (0/20 correct)**
 - Evidence recall: 2%
 - Average time: 118s per query
 
-Interestingly, with BM25 search using k=20, there are times that we retrieved the golden evidence docs. But even so, the model could not synthesize the final answer. Again showcasing the multi-hop nature of this dataset. 
+Interestingly, with BM25 search using k=20, there are times that we retrieved the golden evidence docs. But even so, the model could not synthesize the final answer. Again showcasing the multi-hop nature of this dataset.
 
 ---
 
@@ -131,6 +133,7 @@ Using **Gemini 2.5 Flash** (knowledge cutoff of Jan 2025, pre-dating BrowseComp 
 It was encouraging to see non‑zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original [BrowseComp Plus](https://arxiv.org/abs/2508.06600) paper. I'm sure there was some more prompt tuning for the paper, but since that's not the primary objective of this experiment, I just went with a generic deep research prompt.
 
 I repeated the ReAct baseline a few times, the key issue is the linear context accumulation, since each iteration simply appends the search results to the context:
+
 - Iteration 1: 5,120 tokens (10 docs × 512 tokens)
 - Iteration 5: 25,600 tokens
 - Iteration 15 (max): 76,800 tokens
@@ -185,10 +188,10 @@ The sub-LM receives this hypothesis and provides feedback:
 
 {% highlight python %}
 def build_feedback_prompt_v2(..., leading_hypothesis):
-    """Build hypothesis-aware sub-LM prompt with reflection"""
-    prompt = f"""
-    ORIGINAL QUESTION: {original_query}
-    CURRENT SEARCH: "{search_query}"
+"""Build hypothesis-aware sub-LM prompt with reflection"""
+prompt = f"""
+ORIGINAL QUESTION: {original_query}
+CURRENT SEARCH: "{search_query}"
 
     LEADING HYPOTHESIS FROM THE ANALYST:
     \"\"\"{leading_hypothesis}\"\"\"
@@ -213,19 +216,20 @@ def build_feedback_prompt_v2(..., leading_hypothesis):
     - Query 2: "..."
     - Query 3: "..."
     """
+
 {% endhighlight %}
 
 ### Results
 
 Accuracy of 25%, a roughly 2.5X improvement over ReAct. A huge caveat is that this is only on 20 queries, repeated over multiple runs of the experiment. It's a bit expensive to run these experiments (already used up about $100 of Gemini credits), and there's more low hanging fruits to explore in the RLM framework, so I'll stop at 20 for now.
 
-| Metric | Single BM25 | ReAct | RLM | Change (ReAct→RLM) |
-|--------|-------------|-------|--------|-------------------|
-| **Accuracy** | 0.00% | 10.00% | **25.00%** | **+150%** |
-| **Evidence Recall** | 2.08% | 31.64% | 32.24% | +1.9% |
-| **Avg Searches** | 1 | 8.95 | 7.75 | -13.4% |
-| **Avg Confidence** | - | 39.75% | 51.25% | +28.9% |
-| **Avg Time (s)** | 118 | 79 | 203 | +156.8% |
+| Metric              | Single BM25 | ReAct  | RLM        | Change (ReAct→RLM) |
+| ------------------- | ----------- | ------ | ---------- | ------------------ |
+| **Accuracy**        | 0.00%       | 10.00% | **25.00%** | **+150%**          |
+| **Evidence Recall** | 2.08%       | 31.64% | 32.24%     | +1.9%              |
+| **Avg Searches**    | 1           | 8.95   | 7.75       | -13.4%             |
+| **Avg Confidence**  | -           | 39.75% | 51.25%     | +28.9%             |
+| **Avg Time (s)**    | 118         | 79     | 203        | +156.8%            |
 
 It was great to see the accuracy increase, and very interesting that it wasn't due to evidence recall, which was roughly about the same between ReAct and RLM. Rather, the context reduction from summarization, and also getting to the evidence with fewer iterations (-13%), means a 10X+ reduction in context for the root-LM, which significantly helped with accuracy.
 
@@ -234,14 +238,15 @@ It was great to see the accuracy increase, and very interesting that it wasn't d
 ## Limitations & Future Work
 
 Small sample size is the obvious one, I'll increase this in the near future, once we explore the following augmentations to RLM:
+
 1. for the apples to apples comparison between ReAct and RLM, we are just using the BM25 search tool. Adding Regex, Word Search, and Semantic search will be fast follows
 2. for now, the tools are static, what if we allow the root-LM dynamically create tools (code execution) that spin up sub-LMs? what if we allow depth > 1, and the sub-LMs can then dynamically create and execute additional actions?
 3. As mentioned in the [previous post](https://tangbyron.github.io/posts/anti-patterns-as-guardrails/), as we give more freedom to the RLM to dynamically execute, it'll surely come upon happy/unhappy paths. What if we encode these as memory, and allow the RLM to also dynamically retrieve from this memory bank for past reasoning/execution traces?
 
 ---
 
-*This work was inspired by [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) by Alex Zhang and builds on the [BrowseComp Plus dataset](https://arxiv.org/html/2508.06600v1).*
+_This work was inspired by [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) by Alex Zhang and builds on the [BrowseComp Plus dataset](https://arxiv.org/html/2508.06600v1)._
 
-*Views are strictly my own. Experiments based only on public datasets.*
+_Views are strictly my own. Experiments based only on public datasets._
 
-*Published: November 9, 2025*
+_Published: November 9, 2025_

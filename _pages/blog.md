@@ -17,9 +17,9 @@ pagination:
 ---
 
 {% if page.pagination.enabled %}
-  {% assign postlist = paginator.posts %}
+{% assign postlist = paginator.posts %}
 {% else %}
-  {% assign postlist = site.posts %}
+{% assign postlist = site.posts %}
 {% endif %}
 
 <ul class="post-list">
@@ -34,5 +34,5 @@ pagination:
 </ul>
 
 {% if page.pagination.enabled %}
-  {% include pagination.liquid %}
+{% include pagination.liquid %}
 {% endif %}

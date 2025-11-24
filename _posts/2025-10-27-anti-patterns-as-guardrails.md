@@ -21,17 +21,17 @@ A tiny [Reasoning Bank](https://arxiv.org/html/2509.25140v1) of success and fail
 
 So as of late Oct 2025, expanding the context window of LLMs, and in some ways continual learning for LLMs, is a trending topic. I'm still reading and learning, and I'd bucket recent papers I've come across (thanks to https://www.alphaxiv.org/) into three categories (these are my working buckets as I learn and build more, not meant to be an academic taxonomy):
 
-1. architectural changes - eg [Native Sparse Attention](https://arxiv.org/abs/2502.11089) for long-horizon efficiency 
+1. architectural changes - eg [Native Sparse Attention](https://arxiv.org/abs/2502.11089) for long-horizon efficiency
 2. parametric updates - eg online SFT/RL such as [Sparse Memory Finetuning](https://arxiv.org/abs/2510.15103), which allows continuous knowledge updates without impacting generalization
 3. "outer loop" engineering - building architecture (or scaffold?) around the llm, eg [LightMem](https://www.arxiv.org/abs/2510.18866), [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/), [Reasoning Bank](https://arxiv.org/html/2509.25140v1), and many others
 
-I was especially interested in recursive language model, and reasoning bank, because it seems to me that they align well with the [bitter lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html): 
+I was especially interested in recursive language model, and reasoning bank, because it seems to me that they align well with the [bitter lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html):
 
 _"One thing that should be learned from the bitter lesson is the great power of general purpose methods, of methods that continue to scale with increased computation even as the available computation becomes very great. The two methods that seem to scale arbitrarily in this way are *search and learning*."_
 
-In the case of Recursive Language Models, we give the AI Agent full autonomy to *search* in whatever way it deems. We are not crafting tools with specific instructions on how to use them, which [clog up context](https://www.reddit.com/r/Anthropic/comments/1nkdtiw/mcp_server_context_rot/). Instead, allowing the LLM an execution environment to create whatever python code it deems necessary, and spawn up additional LLM processes to gather the required information.
+In the case of Recursive Language Models, we give the AI Agent full autonomy to _search_ in whatever way it deems. We are not crafting tools with specific instructions on how to use them, which [clog up context](https://www.reddit.com/r/Anthropic/comments/1nkdtiw/mcp_server_context_rot/). Instead, allowing the LLM an execution environment to create whatever python code it deems necessary, and spawn up additional LLM processes to gather the required information.
 
-For Reasoning Bank, we are letting the LLM reflect and *learn* from its own reasoning traces on both success, and more importantly, the incorrect predictions. Unlike many parameter-update methods which often depend on preference winners or scalar rewards, a memory layer allows the LLM to reflect when it got something wrong, and try to distill the "why".
+For Reasoning Bank, we are letting the LLM reflect and _learn_ from its own reasoning traces on both success, and more importantly, the incorrect predictions. Unlike many parameter-update methods which often depend on preference winners or scalar rewards, a memory layer allows the LLM to reflect when it got something wrong, and try to distill the "why".
 
 For this post, we will focus on the PubMedQA dataset, which has fairly limited context windows, so naturally implementing Recursion did not help with performance. We'll save the combo of RLM+RB for another post with experiments on [BrowseComp Plus dataset](https://arxiv.org/abs/2508.06600).
 
@@ -40,6 +40,7 @@ For this post, we will focus on the PubMedQA dataset, which has fairly limited c
 ## Core idea around Reasoning Bank
 
 When humans learn complex tasks, we benefit from two types of examples:
+
 1. **Success patterns**: "Here's how to solve this correctly"
 2. **Failure patterns**: "I got this wrong, here's what I should watch out for next time"
 
@@ -232,7 +233,6 @@ This structure allows flexibility on the presence or absence of memories. One im
 
 ### Inference flow
 
-
 ```
 Input
   │
@@ -256,7 +256,7 @@ This is 1 of N posts on continual learning, I just wanted to document learnings 
 
 ### Current Limitations
 
-1. only tested on PubMedQA for now 
+1. only tested on PubMedQA for now
 2. while everything else about the experiment is very much aligned with bitter lesson's thesis of leaning into search and learning, there is still a "hand crafted" parameter of embedding similarity at the retrieval step
 
 ### What's Next
@@ -269,8 +269,8 @@ This is 1 of N posts on continual learning, I just wanted to document learnings 
 
 ---
 
-*This work was inspired by [ReasoningBank](https://arxiv.org/html/2509.25140v1), [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) and builds on the [PubMedQA dataset](https://pubmedqa.github.io/).*
+_This work was inspired by [ReasoningBank](https://arxiv.org/html/2509.25140v1), [Recursive Language Models](https://alexzhang13.github.io/blog/2025/rlm/) and builds on the [PubMedQA dataset](https://pubmedqa.github.io/)._
 
-*Views are strictly my own. Experiments based only on public datasets.*
+_Views are strictly my own. Experiments based only on public datasets._
 
-*Published: October 27, 2025*
+_Published: October 27, 2025_

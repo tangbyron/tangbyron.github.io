@@ -24,4 +24,3 @@ latest_posts:
   scrollable: false
   limit: 3 # leave blank to include all the blog posts
 ---
-
