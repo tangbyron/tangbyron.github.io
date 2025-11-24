@@ -1,22 +1,3 @@
-<!-- Open Graph and Twitter Card meta tags for social sharing -->
-{% if page.layout == 'post' %}
-  {% assign first_image = page.content | split: '![' | slice: 1 | first | split: '](/assets/img/' | last | split: ')' | first %}
-  {% if first_image %}
-    <meta property="og:image" content="{{ site.url }}/assets/img/{{ first_image }}" />
-    <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="{{ site.url }}/assets/img/{{ first_image }}" />
-  {% endif %}
-  <meta property="og:title" content="{{ page.title }}" />
-  <meta property="og:description" content="{{ page.content | strip_html | truncatewords: 50 }}" />
-  <meta property="og:url" content="{{ site.url }}{{ page.url }}" />
-  <meta property="og:type" content="article" />
-  <meta name="twitter:title" content="{{ page.title }}" />
-  <meta name="twitter:description" content="{{ page.content | strip_html | truncatewords: 50 }}" />
-{% endif %}
-
 <!-- Custom CSS for code block formatting - embedded inline -->
 <style>
 /* Fix code block formatting with ultra-high specificity */
