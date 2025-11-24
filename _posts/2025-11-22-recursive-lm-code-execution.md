@@ -6,8 +6,6 @@ tags: [llm, code-execution, multi-hop, browsecomp, rlm]
 math: true
 toc: true
 render_with_liquid: false
-og_image: https://tangbyron.github.io/assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg
-description: "This is Part 3 in an ongoing series on continual learning for LLM agents: from Reasoning Banks → Recursive Language Models → RLM + Code Execution."
 ---
 
 _This is Part 3 in an ongoing series on continual learning for LLM agents: from [Reasoning Banks](https://tangbyron.github.io/posts/anti-patterns-as-guardrails/) → [Recursive Language Models](https://tangbyron.github.io/posts/recursive-language-models/) → RLM + Code Execution._

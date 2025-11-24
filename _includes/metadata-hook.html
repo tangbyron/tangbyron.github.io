@@ -1,12 +1,10 @@
 <!-- Open Graph and Twitter Card for social media previews -->
-{% if page.og_image %}
-  <meta property="og:image" content="{{ page.og_image }}">
-  <meta name="twitter:image" content="{{ page.og_image }}">
+{% if page.url contains 'recursive-lm-code-execution' %}
+  <meta property="og:image" content="https://tangbyron.github.io/assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg">
+  <meta name="twitter:image" content="https://tangbyron.github.io/assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg">
   <meta name="twitter:card" content="summary_large_image">
-{% endif %}
-{% if page.description %}
-  <meta property="og:description" content="{{ page.description }}">
-  <meta name="twitter:description" content="{{ page.description }}">
+  <meta property="og:description" content="Part 3 in an ongoing series on continual learning for LLM agents: from Reasoning Banks → Recursive Language Models → RLM + Code Execution.">
+  <meta name="twitter:description" content="Part 3 in an ongoing series on continual learning for LLM agents: from Reasoning Banks → Recursive Language Models → RLM + Code Execution.">
 {% endif %}
 
 <!-- Custom CSS for code block formatting - embedded inline -->
