@@ -23,6 +23,10 @@ social:
   links:
     - https://github.com/tangbyron
 
+# Twitter Card configuration
+twitter:
+  card: summary_large_image
+
 # Theme configuration
 # avatar: /assets/img/avatar.jpg  # Uncomment and add your photo later
 

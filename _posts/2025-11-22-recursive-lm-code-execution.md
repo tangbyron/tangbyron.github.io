@@ -6,6 +6,11 @@ tags: [llm, code-execution, multi-hop, browsecomp, rlm]
 math: true
 toc: true
 render_with_liquid: false
+seo:
+  type: BlogPosting
+image:
+  path: /assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg
+  alt: "RLM + Code Execution architecture showing 60% accuracy on BrowseComp Plus"
 ---
 
 _This is Part 3 in an ongoing series on continual learning for LLM agents: from [Reasoning Banks](https://tangbyron.github.io/posts/anti-patterns-as-guardrails/) → [Recursive Language Models](https://tangbyron.github.io/posts/recursive-language-models/) → RLM + Code Execution._
