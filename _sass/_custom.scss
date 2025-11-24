@@ -1,0 +1,51 @@
+// Custom overrides for Byron's blog
+
+.post img {
+  display: block;
+  margin: 2rem auto;
+  max-width: min(960px, 100%);
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+
+/*
+.post pre {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: none;
+  border-radius: 16px;
+  padding: 1.5rem;
+  overflow-x: auto;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.post pre code {
+  background: none;
+  padding: 0;
+  display: block;
+}
+
+.post code {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.94em;
+}
+
+.post pre code::-webkit-scrollbar {
+  height: 8px;
+}
+
+.post pre code::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.post pre code::-webkit-scrollbar-track {
+  background: transparent;
+}
+*/
+

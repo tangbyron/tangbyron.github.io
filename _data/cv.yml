@@ -1,0 +1,46 @@
+- title: General Information
+  type: map
+  contents:
+    - name: Name
+      value: "TODO: Add your name"
+    - name: Role
+      value: "TODO: Add your current role"
+    - name: Location
+      value: "TODO: Add your location"
+
+- title: Experience
+  type: time_table
+  contents:
+    - title: "TODO: Add position title"
+      institution: "TODO: Add employer or team"
+      year: "TODO: year range"
+      description:
+        - "TODO: Highlight impact or responsibilities"
+
+- title: Education
+  type: time_table
+  contents:
+    - title: "TODO: Add degree"
+      institution: "TODO: Add institution"
+      year: "TODO: year or range"
+      description:
+        - "TODO: Add focus areas or achievements"
+
+- title: Selected Projects
+  type: time_table
+  contents:
+    - title: "TODO: Project name"
+      year: "TODO: year"
+      description: "TODO: Brief project summary"
+
+- title: Skills
+  type: nested_list
+  contents:
+    - title: "TODO: Skill domain"
+      items:
+        - "TODO: Specific skill or tool"
+
+- title: Interests
+  type: list
+  contents:
+    - "TODO: Add personal interests"

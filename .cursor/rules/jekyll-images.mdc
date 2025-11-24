@@ -1,0 +1,36 @@
+# Jekyll + Chirpy + GitHub Pages: Images
+
+## Image Display (in post content)
+
+Always use inline Markdown images:
+
+```markdown
+![Alt text](/assets/img/posts/image-name.jpg)
+_Optional caption_
+```
+
+## Social Media Preview (Open Graph / Twitter Card)
+
+**For GitHub Pages compatibility**, add meta tags in `_includes/metadata-hook.html`:
+
+```html
+{% if page.url contains 'your-post-slug' %}
+  <meta property="og:image" content="https://tangbyron.github.io/assets/img/posts/image-name.jpg">
+  <meta name="twitter:image" content="https://tangbyron.github.io/assets/img/posts/image-name.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:description" content="Your post description">
+  <meta name="twitter:description" content="Your post description">
+{% endif %}
+```
+
+**Why this approach?**
+- GitHub Pages rejects custom front matter fields like `og_image`
+- URL-based conditional meta tags work reliably on GitHub Pages
+- Must use absolute URLs (not relative paths) for Twitter/X
+
+## Image Optimization
+
+- Resize to max 1800px width
+- Convert to JPEG at 85% quality
+- Target: <500KB for hero images
+- Store in: `/assets/img/posts/`

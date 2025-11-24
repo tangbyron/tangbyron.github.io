@@ -1,11 +1,14 @@
 ---
+layout: post
 title: "Recursive Language Models + Code Execution: 60% accuracy on BrowseComp Plus (no embeddings)"
 date: 2025-11-22 00:00:00 -0800
 categories: [Search, Reasoning, Code Execution]
 tags: [llm, code-execution, multi-hop, browsecomp, rlm]
 math: true
 toc: true
-render_with_liquid: false
+render_with_liquid: true
+mermaid:
+  enabled: true
 ---
 
 _This is Part 3 in an ongoing series on continual learning for LLM agents: from [Reasoning Banks](https://tangbyron.github.io/posts/anti-patterns-as-guardrails/) → [Recursive Language Models](https://tangbyron.github.io/posts/recursive-language-models/) → RLM + Code Execution._
@@ -61,13 +64,20 @@ In the system prompt, we provide research heuristics like "go broad and then nar
 With code execution, it's suddenly possible! The code below allows the agent to review 500 docs in 1.3 seconds.
 There's something...magically pragmatic to see the LLM implement code to "count" the number of authors, to satisfy the search requirement. Not very elegant, but it works!
 
-```python
-results = bm25_search('article online learning educational technology platform teaching methods digital classroom 2010 2011 2012 2013 2014 2015 2016', bm25, docids, k=500)
+{% highlight python %}
+results = bm25_search(
+    'article online learning educational technology platform teaching methods '
+    'digital classroom 2010 2011 2012 2013 2014 2015 2016',
+    bm25,
+    docids,
+    k=500,
+)
 
 found_articles = []
 for doc_id, score in results:
     text = get_doc_text(doc_id, corpus_dict)
-    if not text: continue
+    if not text:
+        continue
 
     # Check for publication year between 2011 and 2015
     pub_year = None
@@ -75,26 +85,45 @@ for doc_id, score in results:
         if str(year) in text:
             pub_year = year
             break
-    if not pub_year: continue
+    if not pub_year:
+        continue
 
     # Check for educational technology context
-    topic_keywords = ['online learning', 'student engagement', 'virtual classroom', 'educational platform', 'remote teaching', 'digital curriculum', 'assessment', 'pedagogy', 'learning outcomes', 'technology integration']
-    if not any(keyword in text.lower() for keyword in topic_keywords): continue
+    topic_keywords = [
+        'online learning',
+        'student engagement',
+        'virtual classroom',
+        'educational platform',
+        'remote teaching',
+        'digital curriculum',
+        'assessment',
+        'pedagogy',
+        'learning outcomes',
+        'technology integration',
+    ]
+    if not any(keyword in text.lower() for keyword in topic_keywords):
+        continue
 
     # Attempt to count authors (>2 required)
-    author_count_match = re.search(r'(?:by|authors?[:\n])\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)?(?:,\s*[A-Z][a-z]+(?:\s[A-Z][a-z]+)?){2,})', text)
+    author_count_match = re.search(
+        r'(?:by|authors?[:\n])\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)?'
+        r'(?:,\s*[A-Z][a-z]+(?:\s[A-Z][a-z]+)?){2,})',
+        text,
+    )
     if author_count_match:
         authors_list = author_count_match.group(1).split(',')
         if len(authors_list) > 2:
-            found_articles.append({'doc_id': doc_id, 'year': pub_year, 'authors_snippet': author_count_match.group(0)})
-```
+            found_articles.append(
+                {'doc_id': doc_id, 'year': pub_year, 'authors_snippet': author_count_match.group(0)}
+            )
+{% endhighlight %}
 ### Pattern 2: Adaptive Fallback Strategy
 
 **Task**: Extracting an athlete's height from a sports database with fallback to broader search.
 
 This pattern occurred a lot, the Root-LM was able to quickly test a hypothesis, but instead of waiting another turn to pivot, it adds a "self healing" fallback step to search more. Again, amusing to see it use code to do some derivation (m to cm) and math. (BrowseComp Plus has a lot of queries requiring derivations like "this institution was open for 671 days", and the LLM has to compile lists of potential start/close dates and derive to see if it's a match. Fun dataset!)
 
-```python
+{% highlight python %}
 athlete_doc_id = 'doc12345'
 athlete_text = get_doc_text(athlete_doc_id, corpus_dict)
 
@@ -118,7 +147,7 @@ else:
             height_cm = height_m * 100
             print(f"Athlete's height found in {doc_id}: {height_cm:.2f} cm")
             break
-```
+{% endhighlight %}
 
 ### Pattern 3: Parallel Information Gathering + Sub-LM Compression
 
@@ -126,15 +155,21 @@ else:
 
 The agent tested multiple hypotheses in parallel, and batched document retrieval. Retrieved 15 documents (14,797 characters) in a single execution, triggered Sub-LM compression, which condensed it to 1,630 characters (~9x reduction). In this case, the Sub-LM summary directly contained the correct answer. 
 
-```python
-doc_ids_museum_a_area = bm25_search('Metropolitan Museum exhibition space square feet', bm25, docids, k=5)
-doc_ids_museum_b_area = bm25_search('British Museum gallery area square feet', bm25, docids, k=5)
-doc_ids_museum_c_capacity = bm25_search('Louvre Museum daily visitor capacity', bm25, docids, k=5)
+{% highlight python %}
+doc_ids_museum_a_area = bm25_search(
+    'Metropolitan Museum exhibition space square feet', bm25, docids, k=5
+)
+doc_ids_museum_b_area = bm25_search(
+    'British Museum gallery area square feet', bm25, docids, k=5
+)
+doc_ids_museum_c_capacity = bm25_search(
+    'Louvre Museum daily visitor capacity', bm25, docids, k=5
+)
 
 for doc_id in doc_ids_museum_a_area:
     print(f'[{doc_id}]: {get_doc_text(doc_id, corpus_dict)}')
     # ... (repeat for other museums)
-```
+{% endhighlight %}
 
 ### Error handling
 

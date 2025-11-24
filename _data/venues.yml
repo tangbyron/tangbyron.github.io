@@ -1,0 +1,5 @@
+# Map venue abbreviations to display metadata for publications.
+# Example:
+# "NeurIPS":
+#   url: https://neurips.cc
+#   color: "#b732ff"

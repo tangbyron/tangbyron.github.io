@@ -1,11 +1,13 @@
 ---
+layout: post
 title: "Recursive Language Models reduce context rot and 2.5× accuracy on BrowseComp‑Plus (at 2.6× latency)"
 date: 2025-11-09
 categories: [Search, Reasoning]
 tags: [llm, retrieval, multi-hop, browsecomp]
 math: true
 toc: true
-render_with_liquid: false
+render_with_liquid: true
+mermaid: true
 ---
 
 ## Main takeaway
@@ -69,7 +71,7 @@ Interestingly, with BM25 search using k=20, there are times that we retrieved th
 
 The ReAct pattern ([Yao et al., 2023](https://arxiv.org/abs/2210.03629)) enables iterative search through a simple loop: Reason → Act (tool call) → Observe (append results) → Repeat.
 
-```
+```mermaid
 Query → Root LM
          ↓
     ┌────────────┐
@@ -91,7 +93,7 @@ Query → Root LM
 
 Kept it simple, no frameworks, just native Gemini SDK function calling in ~20 lines of core logic:
 
-```python
+```
 # Core ReAct loop
 for iteration in range(max_iterations):
     response = client.models.generate_content(
@@ -171,28 +173,17 @@ In addition to the obvious benefits of compression, I found that the root/sub LM
 
 The root-LM articulates its hypothesis every turn using a structured 5-step format:
 
-```
 **Process (every turn):**
 
-1) **Observations**: Review question, summarize what new signal
-   the latest evidence added.
-
-2) **Evidence Gaps**: List what's still missing to answer confidently.
-
-3) **Leading Hypothesis**: State your current best hypothesis
-   in one clear sentence.
-
-4) **Search Plan**: Choose your next search query:
-   Query: "..."
-   Rationale: Why this specific query will fill the evidence gaps.
-
-5) **Final Answer**: When evidence converges and you're confident,
-   provide answer with document IDs and confidence (0-100).
-```
+1. **Observations:** Review question, summarize what new signal the latest evidence added.
+2. **Evidence Gaps:** List what's still missing to answer confidently.
+3. **Leading Hypothesis:** State your current best hypothesis in one clear sentence.
+4. **Search Plan:** Choose your next search query. Include both the query string and the rationale for why it fills the gaps.
+5. **Final Answer:** When evidence converges and you're confident, provide an answer with document IDs and confidence (0-100).
 
 The sub-LM receives this hypothesis and provides feedback:
 
-```python
+{% highlight python %}
 def build_feedback_prompt_v2(..., leading_hypothesis):
     """Build hypothesis-aware sub-LM prompt with reflection"""
     prompt = f"""
@@ -222,7 +213,7 @@ def build_feedback_prompt_v2(..., leading_hypothesis):
     - Query 2: "..."
     - Query 3: "..."
     """
-```
+{% endhighlight %}
 
 ### Results
 

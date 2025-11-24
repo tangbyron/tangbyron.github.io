@@ -1,11 +1,12 @@
 ---
+layout: post
 title: "Exploring Continuous Learning: Reasoning Bank + Recursive Language Models"
 date: 2025-10-27
 categories: [Memory, Reason]
 tags: [llm, memory, reasoning, pubmedqa]
 math: true
 toc: true
-render_with_liquid: false
+render_with_liquid: true
 ---
 
 ## TLDR
@@ -73,7 +74,7 @@ When the LLM produces an incorrect answer, an LLM Judge extracts a failure-patte
 
 **LLM Judge Prompt**:
 
-```plaintext
+```
 Your task: analyze this failed reasoning trace and extract one failure-pattern
 (common reasoning error) as a cautionary example.
 
@@ -99,7 +100,7 @@ Extract a failure-pattern with:
 
 JSON Structure:
 
-```json
+```
 {
   "title": "Overgeneralization from Limited Evidence",
   "description": "Use as warning when tendency to dismiss feasibility based solely on preliminary/limited data",
@@ -111,7 +112,7 @@ JSON Structure:
 
 Content Field (formatted):
 
-```plaintext
+```
 ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
 failing to recognize that feasibility studies are designed to test practicality,
 not efficacy.
@@ -139,7 +140,7 @@ Limited evidence can still demonstrate feasibility.
 
 **Code Implementation**:
 
-```python
+```
 # Inject success pattern (if retrieved)
 if strategies and len(strategies) > 0:
     prompt += "\n\n" + "="*60 + "\n"
@@ -169,7 +170,7 @@ if strategies or anti_patterns:
 
 **Prompt with injected Reasoning Memories**:
 
-```plaintext
+```
 Based on the provided medical research context, answer the following
 question with 'yes', 'no', or 'maybe':
 
@@ -232,7 +233,7 @@ This structure allows flexibility on the presence or absence of memories. One im
 ### Inference flow
 
 
-```plaintext
+```
 Input
   │
 Retriever ──► Top‑k Memories

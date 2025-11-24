@@ -1,0 +1,5 @@
+# Define coauthors by last name to auto-link them in publication lists.
+# Example:
+# "doe":
+#   - firstname: ["Jane", "J."]
+#     url: https://example.com
