@@ -1,0 +1,138 @@
+<!DOCTYPE html> <html lang="en"> <head> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <title> Exploring Continuous Learning: Reasoning Bank + Recursive Language Models | Blog on AI Eng </title> <meta name="author" content="Byron Tang"> <meta name="description" content="Capturing learnings from papers and experiments. "> <link rel="stylesheet" href="/assets/css/bootstrap.min.css?a4b3f509e79c54a512b890d73235ef04"> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdbootstrap@4.20.0/css/mdb.min.css" integrity="sha256-jpjYvU3G3N6nrrBwXJoVEYI/0zw8htfFnhT9ljN3JJw=" crossorigin="anonymous"> <link defer rel="stylesheet" href="/assets/css/academicons.min.css?f0b7046b84e425c55f3463ac249818f5"> <link defer rel="stylesheet" href="/assets/css/scholar-icons.css?62b2ac103a88034e6882a5be5f3e2772"> <link defer rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Roboto+Slab:100,300,400,500,700|Material+Icons&amp;display=swap"> <link defer rel="stylesheet" href="/assets/css/jekyll-pygments-themes-github.css?591dab5a4e56573bf4ef7fd332894c99" media="" id="highlight_theme_light"> <link rel="stylesheet" href="/assets/css/main.css?d41d8cd98f00b204e9800998ecf8427e"> <link rel="canonical" href="https://tangbyron.github.io/blog/2025/anti-patterns-as-guardrails/"> <script src="/assets/js/theme.js?a81d82887dd692e91686b43de4542f18"></script> <link defer rel="stylesheet" href="/assets/css/jekyll-pygments-themes-native.css?5847e5ed4a4568527aa6cfab446049ca" media="none" id="highlight_theme_dark"> <script>
+    initTheme();
+  </script> </head> <body class="fixed-top-nav "> <header> <nav id="navbar" class="navbar navbar-light navbar-expand-sm fixed-top" role="navigation"> <div class="container"> <a class="navbar-brand title font-weight-lighter" href="/"> Blog on AI Eng </a> <button class="navbar-toggler collapsed ml-auto" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"> <span class="sr-only">Toggle navigation</span> <span class="icon-bar top-bar"></span> <span class="icon-bar middle-bar"></span> <span class="icon-bar bottom-bar"></span> </button> <div class="collapse navbar-collapse text-right" id="navbarNav"> <ul class="navbar-nav ml-auto flex-nowrap"> <li class="nav-item "> <a class="nav-link" href="/">about </a> </li> <li class="nav-item active"> <a class="nav-link" href="/blog/">blog </a> </li> <li class="nav-item"> <button id="search-toggle" title="Search" onclick="openSearchModal()"> <span class="nav-link">ctrl k <i class="ti ti-search"></i></span> </button> </li> <li class="toggle-container"> <button id="light-toggle" title="Change theme"> <i class="ti ti-sun-moon" id="light-toggle-system"></i> <i class="ti ti-moon-filled" id="light-toggle-dark"></i> <i class="ti ti-sun-filled" id="light-toggle-light"></i> </button> </li> </ul> </div> </div> </nav> <progress id="progress" value="0"> <div class="progress-container"> <span class="progress-bar"></span> </div> </progress> </header> <div class="container mt-5" role="main"> <div class="post"> <header class="post-header"> <h1 class="post-title">Exploring Continuous Learning: Reasoning Bank + Recursive Language Models</h1> <p class="post-meta"> Created on October 27, 2025 </p> <p class="post-tags"> <a href="/blog/2025"> <i class="fa-solid fa-calendar fa-sm"></i> 2025 </a>   ·   <a href="/blog/tag/llm"> <i class="fa-solid fa-hashtag fa-sm"></i> llm</a>   <a href="/blog/tag/memory"> <i class="fa-solid fa-hashtag fa-sm"></i> memory</a>   <a href="/blog/tag/reasoning"> <i class="fa-solid fa-hashtag fa-sm"></i> reasoning</a>   <a href="/blog/tag/pubmedqa"> <i class="fa-solid fa-hashtag fa-sm"></i> pubmedqa</a>   ·   <a href="/blog/category/memory"> <i class="fa-solid fa-tag fa-sm"></i> Memory</a>   <a href="/blog/category/reason"> <i class="fa-solid fa-tag fa-sm"></i> Reason</a> </p> </header> <article class="post-content"> <div id="markdown-content"> <h2 id="tldr">TLDR</h2> <p>A tiny <a href="https://arxiv.org/html/2509.25140v1" rel="external nofollow noopener" target="_blank">Reasoning Bank</a> of success and failure reasoning strategies on PubMedQA nudged accuracy from 73% → 77%. The lift was strongest when both success and failure strategies were present, reaching 84% in that subset. No fine‑tuning, just retrieval of distilled memories.</p> <hr> <h2 id="motivation">Motivation</h2> <p>2025 gave us million token context windows, and a new failure mode in <a href="https://research.trychroma.com/context-rot" rel="external nofollow noopener" target="_blank">context rot</a>. Retrieval is as important as ever (I’m avoiding RAG here, as I agree with Jeff Huber’s point that we should just call it retrieval), and I’m interested in exploring memory and reasoning, vs just stuffing prompts with relevant chunks.</p> <p>So as of late Oct 2025, expanding the context window of LLMs, and in some ways continual learning for LLMs, is a trending topic. I’m still reading and learning, and I’d bucket recent papers I’ve come across (thanks to https://www.alphaxiv.org/) into three categories (these are my working buckets as I learn and build more, not meant to be an academic taxonomy):</p> <ol> <li>architectural changes - eg <a href="https://arxiv.org/abs/2502.11089" rel="external nofollow noopener" target="_blank">Native Sparse Attention</a> for long-horizon efficiency</li> <li>parametric updates - eg online SFT/RL such as <a href="https://arxiv.org/abs/2510.15103" rel="external nofollow noopener" target="_blank">Sparse Memory Finetuning</a>, which allows continuous knowledge updates without impacting generalization</li> <li>“outer loop” engineering - building architecture (or scaffold?) around the llm, eg <a href="https://www.arxiv.org/abs/2510.18866" rel="external nofollow noopener" target="_blank">LightMem</a>, <a href="https://alexzhang13.github.io/blog/2025/rlm/" rel="external nofollow noopener" target="_blank">Recursive Language Models</a>, <a href="https://arxiv.org/html/2509.25140v1" rel="external nofollow noopener" target="_blank">Reasoning Bank</a>, and many others</li> </ol> <p>I was especially interested in recursive language model, and reasoning bank, because it seems to me that they align well with the <a href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html" rel="external nofollow noopener" target="_blank">bitter lesson</a>:</p> <p><em>“One thing that should be learned from the bitter lesson is the great power of general purpose methods, of methods that continue to scale with increased computation even as the available computation becomes very great. The two methods that seem to scale arbitrarily in this way are *search and learning*.”</em></p> <p>In the case of Recursive Language Models, we give the AI Agent full autonomy to <em>search</em> in whatever way it deems. We are not crafting tools with specific instructions on how to use them, which <a href="https://www.reddit.com/r/Anthropic/comments/1nkdtiw/mcp_server_context_rot/" rel="external nofollow noopener" target="_blank">clog up context</a>. Instead, allowing the LLM an execution environment to create whatever python code it deems necessary, and spawn up additional LLM processes to gather the required information.</p> <p>For Reasoning Bank, we are letting the LLM reflect and <em>learn</em> from its own reasoning traces on both success, and more importantly, the incorrect predictions. Unlike many parameter-update methods which often depend on preference winners or scalar rewards, a memory layer allows the LLM to reflect when it got something wrong, and try to distill the “why”.</p> <p>For this post, we will focus on the PubMedQA dataset, which has fairly limited context windows, so naturally implementing Recursion did not help with performance. We’ll save the combo of RLM+RB for another post with experiments on <a href="https://arxiv.org/abs/2508.06600" rel="external nofollow noopener" target="_blank">BrowseComp Plus dataset</a>.</p> <hr> <h2 id="core-idea-around-reasoning-bank">Core idea around Reasoning Bank</h2> <p>When humans learn complex tasks, we benefit from two types of examples:</p> <ol> <li> <strong>Success patterns</strong>: “Here’s how to solve this correctly”</li> <li> <strong>Failure patterns</strong>: “I got this wrong, here’s what I should watch out for next time”</li> </ol> <p>Most AI systems only learn from successes. But what if the LLM can learn from both success and failures? And perhaps even more importantly, reflect on why it made a mistake in the first place, so the learnings are generalizable?</p> <hr> <h2 id="experiment">Experiment</h2> <ul> <li> <strong>Dataset</strong>: <a href="https://huggingface.co/datasets/qiaojin/PubMedQA" rel="external nofollow noopener" target="_blank">PubMedQA</a> </li> <li> <strong>Task</strong>: Answer yes/no/maybe based on research abstracts</li> <li> <strong>LLM</strong>: Gemini 2.5 Flash</li> <li> <strong>Memory Reasoning Bank</strong>: 200 training examples → 144 success patterns + 56 failure-patterns</li> <li> <strong>Retrieval of Memory</strong>: Semantic similarity matching via embeddings</li> <li> <strong>Train/Test</strong>: Randomly sample, build (“train”) the Reasoning Bank on 200 examples, inference on 100 examples</li> <li> <strong>Comparison</strong>: Vanilla LLM prediction: 73% accuracy, LLM+MRB: 77% accuracy. Across 10 independent random splits/seeds, the memory‑augmented setup delivered a consistent ~4‑point lift; small but stable, not a one‑off.</li> </ul> <hr> <h2 id="learning-from-failure">Learning from Failure</h2> <p>A failure-pattern is a structured analysis of a reasoning and prediction failure</p> <h3 id="extraction">Extraction</h3> <p>When the LLM produces an incorrect answer, an LLM Judge extracts a failure-pattern with these components:</p> <ol> <li> <strong>Error Identification</strong>: What specific reasoning error occurred?</li> <li> <strong>Warning Signals</strong>: What indicators should have been noticed?</li> <li> <strong>Correct Approach</strong>: How should the reasoning have proceeded?</li> <li> <strong>Generalizable Lessons</strong>: What broader takeaways apply to similar questions?</li> </ol> <p><strong>LLM Judge Prompt</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Your task: analyze this failed reasoning trace and extract one failure-pattern
+(common reasoning error) as a cautionary example.
+
+Question: {query}
+Reasoning trace: {reasoning}
+Outcome: failure
+Ground truth: {correct_answer}
+Model answer: {wrong_answer}
+
+Extract a failure-pattern with:
+1. Title: Short name for the error (e.g., "Overgeneralization from Limited Evidence")
+2. Description: One-sentence summary of when this error occurs
+3. Content: 4-component analysis:
+   - ERROR: What reasoning mistake was made
+   - WARNING SIGNALS: What should have raised concerns
+   - CORRECT APPROACH: How to reason properly
+   - LESSONS: Generalizable takeaways
+4. Tags: Domain/task filters (["pubmedqa", "yes_no_qa", ...])
+5. Outcome: "failure"
+</code></pre></div></div> <p><strong>Example failure-pattern Output</strong>:</p> <p>JSON Structure:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+  "title": "Overgeneralization from Limited Evidence",
+  "description": "Use as warning when tendency to dismiss feasibility based solely on preliminary/limited data",
+  "content": "...",
+  "tags": ["pubmedqa", "yes_no_qa", "feasibility_study"],
+  "outcome": "failure"
+}
+</code></pre></div></div> <p>Content Field (formatted):</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
+failing to recognize that feasibility studies are designed to test practicality,
+not efficacy.
+
+WARNING SIGNALS:
+- Question asks about feasibility, not efficacy
+- Study explicitly states "feasibility study"
+- Evidence shows completion rates and participant feedback
+
+CORRECT APPROACH:
+1. Distinguish feasibility questions from efficacy questions
+2. Recognize that feasibility focuses on practical implementation
+3. Evaluate completion rates and participant acceptance
+4. Answer 'yes' for feasibility even if efficacy unclear
+
+LESSONS: Don't apply efficacy standards to feasibility questions.
+Limited evidence can still demonstrate feasibility.
+</code></pre></div></div> <hr> <h3 id="injecting-reasoning-memories">Injecting Reasoning Memories</h3> <p><strong>Purpose</strong>: Inject <strong>both</strong> success patterns AND failure-patterns with distinct formatting</p> <p><strong>Code Implementation</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Inject success pattern (if retrieved)
+if strategies and len(strategies) &gt; 0:
+    prompt += "\n\n" + "="*60 + "\n"
+    prompt += "RELEVANT STRATEGY (from similar past questions):\n"
+    prompt += "="*60 + "\n\n"
+    strategy = strategies[0]
+    prompt += f"{strategy.title}\n"
+    prompt += f"When to use: {strategy.description}\n"
+    prompt += f"Approach:\n{strategy.content}\n\n"
+
+# Inject failure-pattern (if retrieved) with warning formatting
+if anti_patterns and len(anti_patterns) &gt; 0:
+    prompt += "="*60 + "\n"
+    prompt += "⚠️  ANTI-PATTERN TO AVOID:\n"
+    prompt += "="*60 + "\n\n"
+    anti = anti_patterns[0]
+    prompt += f"{anti.title}\n"
+    prompt += f"Common mistake: {anti.description}\n"
+    prompt += f"Analysis:\n{anti.content}\n\n"
+
+# Closing guidance
+if strategies or anti_patterns:
+    prompt += "="*60 + "\n"
+    prompt += "Consider these patterns when answering.\n"
+    prompt += "="*60 + "\n\n"
+</code></pre></div></div> <p><strong>Prompt with injected Reasoning Memories</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Based on the provided medical research context, answer the following
+question with 'yes', 'no', or 'maybe':
+
+Question: Aromatase inhibitor-related musculoskeletal symptoms: is preventing
+them with exercise feasible?
+
+Context:
+[... medical abstract about feasibility study ...]
+
+============================================================
+RELEVANT STRATEGY (from similar past questions):
+============================================================
+
+Evaluate Feasibility Study Outcomes
+When to use: Use when assessing practical implementation feasibility
+Approach:
+1. Check completion rates and participant retention
+2. Evaluate acceptability metrics
+3. Distinguish feasibility from efficacy
+4. Answer based on implementation success
+
+============================================================
+ANTI-PATTERN TO AVOID
+============================================================
+
+Overgeneralization from Limited Evidence
+Common mistake: Dismissing feasibility based on limited pilot data
+
+Analysis:
+ERROR: Dismissed feasibility of intervention based on limited pilot
+evidence, failing to recognize that feasibility studies test practicality,
+not efficacy.
+
+WARNING SIGNALS:
+- Question asks about feasibility, not efficacy
+- Study explicitly states "feasibility study"
+- Evidence shows completion rates and participant feedback
+
+CORRECT APPROACH:
+1. Distinguish feasibility questions from efficacy questions
+2. Recognize that feasibility focuses on practical implementation
+3. Evaluate completion rates and participant acceptance
+4. Answer 'yes' for feasibility even if efficacy unclear
+
+LESSONS: Don't apply efficacy standards to feasibility questions.
+Limited evidence can still demonstrate feasibility.
+
+============================================================
+Consider these patterns when answering.
+============================================================
+
+Please analyze the context carefully and provide your answer as one
+word: yes, no, or maybe.
+</code></pre></div></div> <p>This structure allows flexibility on the presence or absence of memories. One important finding is that ~19% of examples had both a successful and a failure pattern extracted, and those yielded 84% accuracy (73% baseline for vanilla LLM predictions).</p> <hr> <h3 id="inference-flow">Inference flow</h3> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Input
+  │
+Retriever ──► Top‑k Memories
+  │              ├─ Strategy: "Evaluate Feasibility (completion, retention...)"
+  │              └─ Anti‑pattern: "Overgeneralize from limited evidence"
+  │
+Prompt Composer
+  │   (inject strategy/anti‑pattern blocks)
+  ▼
+LLM ⇢ answer (yes/no/maybe)
+  │
+Judge (optional) ──► new memory (strategy or anti‑pattern)
+</code></pre></div></div> <hr> <h2 id="limitations--next-steps">Limitations &amp; Next Steps</h2> <p>This is 1 of N posts on continual learning, I just wanted to document learnings so far.</p> <h3 id="current-limitations">Current Limitations</h3> <ol> <li>only tested on PubMedQA for now</li> <li>while everything else about the experiment is very much aligned with bitter lesson’s thesis of leaning into search and learning, there is still a “hand crafted” parameter of embedding similarity at the retrieval step</li> </ol> <h3 id="whats-next">What’s Next</h3> <ol> <li>the reasoning bank was built (“trained”, but not in the classical ML sense) on ~200 examples, what if we scaled it to more?</li> <li>as successful and failure patterns increased, is there a way to “consolidate” (<a href="https://arxiv.org/abs/2510.18866?utm_source=chatgpt.com" rel="external nofollow noopener" target="_blank">LightMem</a>) the memories so that the reasoning traces and failure reflections are even more generalizable and helpful?</li> <li>can the “training” step of building up the reasoning bank also be more iterative, in that example 10 references reason traces developed from examples 1-9, and potentially even updates the memories given some sort of ground truth label?</li> <li>I’m curious how this approach compares to using <a href="https://arxiv.org/abs/2507.19457" rel="external nofollow noopener" target="_blank">GEPA</a>. I intentionally did not tune the prompt (thanks Claude) for this current experiment</li> <li>very curious on trying the combo of RLM + MRB on BrowserComp Plus, as reasoning memories on how the LLM recursively found solutions to complex and long context could be incredibly valuable</li> </ol> <hr> <p><em>This work was inspired by <a href="https://arxiv.org/html/2509.25140v1" rel="external nofollow noopener" target="_blank">ReasoningBank</a>, <a href="https://alexzhang13.github.io/blog/2025/rlm/" rel="external nofollow noopener" target="_blank">Recursive Language Models</a> and builds on the <a href="https://pubmedqa.github.io/" rel="external nofollow noopener" target="_blank">PubMedQA dataset</a>.</em></p> <p><em>Views are strictly my own. Experiments based only on public datasets.</em></p> <p><em>Published: October 27, 2025</em></p> </div> </article> <br> <hr> <br> <ul class="list-disc pl-8"></ul> <h2 class="text-3xl font-semibold mb-4 mt-12">Enjoy Reading This Article?</h2> <p class="mb-2">Here are some more articles you might like to read next:</p> <li class="my-2"> <a class="text-pink-700 underline font-semibold hover:text-pink-800" href="/blog/2025/recursive-lm-code-execution/">Recursive Language Models + Code Execution: 60% accuracy on BrowseComp Plus (no embeddings)</a> </li> <li class="my-2"> <a class="text-pink-700 underline font-semibold hover:text-pink-800" href="/blog/2025/recursive-language-models/">Recursive Language Models reduce context rot and 2.5× accuracy on BrowseComp‑Plus (at 2.6× latency)</a> </li> </div> </div> <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> <script src="/assets/js/bootstrap.bundle.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/mdbootstrap@4.20.0/js/mdb.min.js" integrity="sha256-NdbiivsvWt7VYCt6hYNT3h/th9vSTL4EDWeGs5SN3DA=" crossorigin="anonymous"></script> <script defer src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha256-Nn1q/fx0H7SNLZMQ5Hw5JLaTRZp0yILA/FRexe19VdI=" crossorigin="anonymous"></script> <script defer src="https://cdn.jsdelivr.net/npm/imagesloaded@5.0.0/imagesloaded.pkgd.min.js" integrity="sha256-htrLFfZJ6v5udOG+3kNLINIKh2gvoKqwEhHYfTTMICc=" crossorigin="anonymous"></script> <script defer src="/assets/js/masonry.js?a0db7e5d5c70cc3252b3138b0c91dcaf" type="text/javascript"></script> <script defer src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js" integrity="sha256-ZgMyDAIYDYGxbcpJcfUnYwNevG/xi9OHKaR/8GK+jWc=" crossorigin="anonymous"></script> <script defer src="/assets/js/zoom.js?85ddb88934d28b74e78031fd54cf8308"></script> <script src="/assets/js/no_defer.js?2781658a0a2b13ed609542042a859126"></script> <script defer src="/assets/js/common.js?c15de51d4bb57887caa2c21988d97279"></script> <script defer src="/assets/js/copy_code.js?c8a01c11a92744d44b093fc3bda915df" type="text/javascript"></script> <script defer src="/assets/js/jupyter_new_tab.js?d9f17b6adc2311cbabd747f4538bb15f"></script> <script async src="https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js"></script> <script async src="https://badge.dimensions.ai/badge.js"></script> <script defer type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script> <script src="/assets/js/mathjax-setup.js?a5bb4e6a542c546dd929b24b8b236dfd"></script> <script defer src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6" crossorigin="anonymous"></script> <script defer src="/assets/js/progress-bar.js?2f30e0e6801ea8f5036fa66e1ab0a71a" type="text/javascript"></script> <script src="/assets/js/vanilla-back-to-top.min.js?f40d453793ff4f64e238e420181a1d17"></script> <script>
+    addBackToTop();
+  </script> <script type="module" src="/assets/js/search/ninja-keys.min.js?a3446f084dcaecc5f75aa1757d087dcf"></script> <ninja-keys hidebreadcrumbs noautoloadmdicons placeholder="Type to start searching"></ninja-keys> <script src="/assets/js/search-setup.js?6c304f7b1992d4b60f7a07956e52f04a"></script> <script src="/assets/js/search-data.js"></script> <script src="/assets/js/shortcut-key.js?6f508d74becd347268a7f822bca7309d"></script> </body> </html>

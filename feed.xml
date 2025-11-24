@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="https://tangbyron.github.io/feed.xml" rel="self" type="application/atom+xml"/><link href="https://tangbyron.github.io/" rel="alternate" type="text/html" hreflang="en"/><updated>2025-11-24T15:31:36+00:00</updated><id>https://tangbyron.github.io/feed.xml</id><title type="html">Blog on AI Eng</title><subtitle>Capturing learnings from papers and experiments. </subtitle><entry><title type="html">Recursive Language Models + Code Execution: 60% accuracy on BrowseComp Plus (no embeddings)</title><link href="https://tangbyron.github.io/blog/2025/recursive-lm-code-execution/" rel="alternate" type="text/html" title="Recursive Language Models + Code Execution: 60% accuracy on BrowseComp Plus (no embeddings)"/><published>2025-11-22T08:00:00+00:00</published><updated>2025-11-22T08:00:00+00:00</updated><id>https://tangbyron.github.io/blog/2025/recursive-lm-code-execution</id><content type="html" xml:base="https://tangbyron.github.io/blog/2025/recursive-lm-code-execution/"><![CDATA[<p><em>This is Part 3 in an ongoing series on continual learning for LLM agents: from <a href="https://tangbyron.github.io/posts/anti-patterns-as-guardrails/">Reasoning Banks</a> → <a href="https://tangbyron.github.io/posts/recursive-language-models/">Recursive Language Models</a> → RLM + Code Execution.</em></p> <p><img src="/assets/img/posts/2025-11-22-recursive-lm-code-execution.jpg" alt="RLM + Code Execution Overview"/> <em>Visual summary of the architecture and key code patterns</em></p> <h2 id="main-takeaway">Main takeaway</h2> <p>Combining Code Execution with Recursive Language Models (RLM) achieved <strong>60% accuracy</strong> on <a href="https://arxiv.org/abs/2508.06600">BrowseComp Plus</a> in small-scale experiments with Gemini 2.5 Flash, all without using embeddings. This is a 6X improvement compared to using the ReAct agent design, and is in the same ballpark as the BM25 only configurations of o3 and GPT-5 on the public <a href="https://huggingface.co/spaces/Tevatron/BrowseComp-Plus">leaderboard</a>. I want to emphasize that these are still just directionally correct early findings, since I’m running on small sample sizes. Given the costly nature of testing various experiments (lots of tokens!), I prioritized rapid architecture experimentation, vs running on the entire corpus.</p> <p>The breakthrough was letting the Root-LM write python code to programmatically chain search tools, create complex filters, and parallelize search. The Root-LM was quite creative, and often created logic that would have taken 3-4 iterations in the traditional LLM&lt;&gt;Tool loop. Code execution often resulted in huge outputs, which paired extremely well with the RLM Sub-LM summarizer that prevents context rot.</p> <p>I intentionally skipped adding in semantic search tools leveraging embeddings, since real-world scenarios are often dynamic. Users can upload new documents, ask the agent to search online, or work with constantly changing corpora. Pre-building vector stores isn’t always feasible. (On the flip side, I also don’t quite believe that “grep is all you need”, hybrid search wins for real-world use cases.)</p> <p>The journey: 0% (single BM25 search + LLM) -&gt; 10% (ReAct + BM25) -&gt; 25% (RLM + BM25) -&gt; 40% (RLM + more search tools) -&gt; 60% (RLM + search tools + code execution)</p> <hr/> <h2 id="0-to-60">0 to 60</h2> <p>Building on my <a href="https://tangbyron.github.io/posts/recursive-language-models/">previous post on Recursive Language Models</a>, here’s the progression:</p> <table> <thead> <tr> <th>Variant</th> <th>Accuracy (approx)</th> </tr> </thead> <tbody> <tr> <td>Single BM25</td> <td>0%</td> </tr> <tr> <td>ReAct</td> <td>10%</td> </tr> <tr> <td>RLM + BM25</td> <td>25%</td> </tr> <tr> <td>RLM + BM25 + Regex and Keyword Scan</td> <td>35–40%</td> </tr> <tr> <td>RLM + BM25 + Regex and Keyword Scan + Code Execution</td> <td>60%</td> </tr> </tbody> </table> <hr/> <h2 id="code-execution">Code Execution</h2> <h3 id="motivation">Motivation</h3> <p>As <a href="https://www.anthropic.com/engineering/code-execution-with-mcp">Anthropic notes</a>, adding more specialized tools creates cognitive overhead for the LLM. Each tool needs its own schema, parameters, and usage patterns to be encoded into the prompts. Even with just three search tools, it got messy real fast. Code execution was much more elegant.</p> <p>The Root-LM got a sandboxed Python environment with:</p> <ul> <li><strong>Full Python standard library</strong>: <code class="language-plaintext highlighter-rouge">re</code>, <code class="language-plaintext highlighter-rouge">json</code>, etc.</li> <li><strong>BM25 search API</strong>: <code class="language-plaintext highlighter-rouge">bm25_search(query, bm25, docids, k=20)</code></li> <li><strong>Document access</strong>: <code class="language-plaintext highlighter-rouge">get_doc_text(doc_id, corpus_dict)</code></li> </ul> <p>It was quite amazing to see how creative the Root-LM was. From reading through the logs, it “felt” like it was freed from having to use these pre-defined search tools, one at a time. There were so many cool patterns, I’m including a few of my favorites below:</p> <h3 id="pattern-1-progressive-refinement-bm25--complex-filtering">Pattern 1: Progressive Refinement (BM25 + complex filtering)</h3> <p><strong>Task</strong>: Finding academic papers about educational technology published between 2011-2015 with multiple co-authors.</p> <p>In the system prompt, we provide research heuristics like “go broad and then narrow”. Sounds easy to do, but hard when the agent is bound to using search tools turn by turn. With code execution, it’s suddenly possible! The code below allows the agent to review 500 docs in 1.3 seconds. There’s something…magically pragmatic to see the LLM implement code to “count” the number of authors, to satisfy the search requirement. Not very elegant, but it works!</p> <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">results</span> <span class="o">=</span> <span class="nf">bm25_search</span><span class="p">(</span>
+    <span class="sh">'</span><span class="s">article online learning educational technology platform teaching methods </span><span class="sh">'</span>
+    <span class="sh">'</span><span class="s">digital classroom 2010 2011 2012 2013 2014 2015 2016</span><span class="sh">'</span><span class="p">,</span>
+    <span class="n">bm25</span><span class="p">,</span>
+    <span class="n">docids</span><span class="p">,</span>
+    <span class="n">k</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">found_articles</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="nf">get_doc_text</span><span class="p">(</span><span class="n">doc_id</span><span class="p">,</span> <span class="n">corpus_dict</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Check for publication year between 2011 and 2015
+</span>    <span class="n">pub_year</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2011</span><span class="p">,</span> <span class="mi">2016</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nf">str</span><span class="p">(</span><span class="n">year</span><span class="p">)</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">pub_year</span> <span class="o">=</span> <span class="n">year</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pub_year</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Check for educational technology context
+</span>    <span class="n">topic_keywords</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sh">'</span><span class="s">online learning</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">student engagement</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">virtual classroom</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">educational platform</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">remote teaching</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">digital curriculum</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">assessment</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">pedagogy</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">learning outcomes</span><span class="sh">'</span><span class="p">,</span>
+        <span class="sh">'</span><span class="s">technology integration</span><span class="sh">'</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nf">any</span><span class="p">(</span><span class="n">keyword</span> <span class="ow">in</span> <span class="n">text</span><span class="p">.</span><span class="nf">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">topic_keywords</span><span class="p">):</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Attempt to count authors (&gt;2 required)
+</span>    <span class="n">author_count_match</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span>
+        <span class="sa">r</span><span class="sh">'</span><span class="s">(?:by|authors?[:\n])\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)?</span><span class="sh">'</span>
+        <span class="sa">r</span><span class="sh">'</span><span class="s">(?:,\s*[A-Z][a-z]+(?:\s[A-Z][a-z]+)?){2,})</span><span class="sh">'</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">author_count_match</span><span class="p">:</span>
+        <span class="n">authors_list</span> <span class="o">=</span> <span class="n">author_count_match</span><span class="p">.</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s">,</span><span class="sh">'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">authors_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">found_articles</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span>
+                <span class="p">{</span><span class="sh">'</span><span class="s">doc_id</span><span class="sh">'</span><span class="p">:</span> <span class="n">doc_id</span><span class="p">,</span> <span class="sh">'</span><span class="s">year</span><span class="sh">'</span><span class="p">:</span> <span class="n">pub_year</span><span class="p">,</span> <span class="sh">'</span><span class="s">authors_snippet</span><span class="sh">'</span><span class="p">:</span> <span class="n">author_count_match</span><span class="p">.</span><span class="nf">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+            <span class="p">)</span></code></pre></figure> <h3 id="pattern-2-adaptive-fallback-strategy">Pattern 2: Adaptive Fallback Strategy</h3> <p><strong>Task</strong>: Extracting an athlete’s height from a sports database with fallback to broader search.</p> <p>This pattern occurred a lot, the Root-LM was able to quickly test a hypothesis, but instead of waiting another turn to pivot, it adds a “self healing” fallback step to search more. Again, amusing to see it use code to do some derivation (m to cm) and math. (BrowseComp Plus has a lot of queries requiring derivations like “this institution was open for 671 days”, and the LLM has to compile lists of potential start/close dates and derive to see if it’s a match. Fun dataset!)</p> <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">athlete_doc_id</span> <span class="o">=</span> <span class="sh">'</span><span class="s">doc12345</span><span class="sh">'</span>
+<span class="n">athlete_text</span> <span class="o">=</span> <span class="nf">get_doc_text</span><span class="p">(</span><span class="n">athlete_doc_id</span><span class="p">,</span> <span class="n">corpus_dict</span><span class="p">)</span>
+
+<span class="c1"># Try specific document first
+</span><span class="n">height_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="sh">'</span><span class="s">height:\s*(\d\.\d{2})\s*m</span><span class="sh">'</span>
+<span class="n">height_match</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="n">height_pattern</span><span class="p">,</span> <span class="n">athlete_text</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">height_match</span><span class="p">:</span>
+    <span class="n">height_m</span> <span class="o">=</span> <span class="nf">float</span><span class="p">(</span><span class="n">height_match</span><span class="p">.</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">height_cm</span> <span class="o">=</span> <span class="n">height_m</span> <span class="o">*</span> <span class="mi">100</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Athlete</span><span class="sh">'</span><span class="s">s height: </span><span class="si">{</span><span class="n">height_cm</span><span class="si">:</span><span class="p">.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s"> cm</span><span class="sh">"</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Height information not found in doc12345. Expanding search.</span><span class="sh">"</span><span class="p">)</span>
+    <span class="c1"># Fallback: broader search
+</span>    <span class="n">results</span> <span class="o">=</span> <span class="nf">bm25_search</span><span class="p">(</span><span class="sh">'</span><span class="s">professional athlete height statistics</span><span class="sh">'</span><span class="p">,</span> <span class="n">bm25</span><span class="p">,</span> <span class="n">docids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">doc_id</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nf">get_doc_text</span><span class="p">(</span><span class="n">doc_id</span><span class="p">,</span> <span class="n">corpus_dict</span><span class="p">)</span>
+        <span class="n">height_match</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="n">height_pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">height_match</span><span class="p">:</span>
+            <span class="n">height_m</span> <span class="o">=</span> <span class="nf">float</span><span class="p">(</span><span class="n">height_match</span><span class="p">.</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">height_cm</span> <span class="o">=</span> <span class="n">height_m</span> <span class="o">*</span> <span class="mi">100</span>
+            <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Athlete</span><span class="sh">'</span><span class="s">s height found in </span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s">: </span><span class="si">{</span><span class="n">height_cm</span><span class="si">:</span><span class="p">.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s"> cm</span><span class="sh">"</span><span class="p">)</span>
+            <span class="k">break</span></code></pre></figure> <h3 id="pattern-3-parallel-information-gathering--sub-lm-compression">Pattern 3: Parallel Information Gathering + Sub-LM Compression</h3> <p><strong>Task</strong>: Comparing exhibition space and visitor capacity across multiple museums.</p> <p>The agent tested multiple hypotheses in parallel, and batched document retrieval. Retrieved 15 documents (14,797 characters) in a single execution, triggered Sub-LM compression, which condensed it to 1,630 characters (~9x reduction). In this case, the Sub-LM summary directly contained the correct answer.</p> <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">doc_ids_museum_a_area</span> <span class="o">=</span> <span class="nf">bm25_search</span><span class="p">(</span>
+    <span class="sh">'</span><span class="s">Metropolitan Museum exhibition space square feet</span><span class="sh">'</span><span class="p">,</span> <span class="n">bm25</span><span class="p">,</span> <span class="n">docids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+<span class="n">doc_ids_museum_b_area</span> <span class="o">=</span> <span class="nf">bm25_search</span><span class="p">(</span>
+    <span class="sh">'</span><span class="s">British Museum gallery area square feet</span><span class="sh">'</span><span class="p">,</span> <span class="n">bm25</span><span class="p">,</span> <span class="n">docids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+<span class="n">doc_ids_museum_c_capacity</span> <span class="o">=</span> <span class="nf">bm25_search</span><span class="p">(</span>
+    <span class="sh">'</span><span class="s">Louvre Museum daily visitor capacity</span><span class="sh">'</span><span class="p">,</span> <span class="n">bm25</span><span class="p">,</span> <span class="n">docids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">doc_ids_museum_a_area</span><span class="p">:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">[</span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s">]: </span><span class="si">{</span><span class="nf">get_doc_text</span><span class="p">(</span><span class="n">doc_id</span><span class="p">,</span> <span class="n">corpus_dict</span><span class="p">)</span><span class="si">}</span><span class="sh">'</span><span class="p">)</span>
+    <span class="c1"># ... (repeat for other museums)</span></code></pre></figure> <h3 id="error-handling">Error handling</h3> <p>I did want to note that code execution was only successful 78% of the time, failures were typically due to overly complex regex patterns. In the case of failure, the error was passed back to the Root-LM, and triggered a retry that was typically successful.</p> <h3 id="sandbox-constraints">Sandbox Constraints</h3> <ul> <li>30-second timeout per execution (enforced via SIGALRM)</li> <li>Output truncation at 15,000 characters (~5,000 tokens) with intelligent line-boundary truncation</li> <li>Module whitelist: only <code class="language-plaintext highlighter-rouge">re</code> and <code class="language-plaintext highlighter-rouge">json</code> (no numpy, pandas, requests, etc.)</li> <li>No network access: no socket, urllib, requests, or any I/O modules</li> <li>No file system access: no <code class="language-plaintext highlighter-rouge">open()</code>, <code class="language-plaintext highlighter-rouge">os</code>, <code class="language-plaintext highlighter-rouge">pathlib</code>, or file operations</li> <li>Read-only corpus access: can read <code class="language-plaintext highlighter-rouge">corpus_dict</code>, <code class="language-plaintext highlighter-rouge">query_text</code>, BM25 index, and <code class="language-plaintext highlighter-rouge">docids</code> but cannot modify them</li> <li>Restricted builtins: only safe built-ins like <code class="language-plaintext highlighter-rouge">print</code>, <code class="language-plaintext highlighter-rouge">len</code>, <code class="language-plaintext highlighter-rouge">range</code>, type constructors – no <code class="language-plaintext highlighter-rouge">exec</code>, <code class="language-plaintext highlighter-rouge">eval</code>, <code class="language-plaintext highlighter-rouge">compile</code>, <code class="language-plaintext highlighter-rouge">__import__</code> (except a controlled <code class="language-plaintext highlighter-rouge">safe_import</code>)</li> </ul> <hr/> <h2 id="architecture">Architecture</h2> <pre><code class="language-mermaid">sequenceDiagram
+  participant User
+  participant RootLM as Root-LM
+  participant Retrieval as Retrieval Tools
+  participant CodeExec as Code Executor
+  participant SubLM as Sub-LM
+
+  User-&gt;&gt;RootLM: Question
+
+  alt Retrieval Path
+    RootLM-&gt;&gt;Retrieval: Query
+    Note over Retrieval: BM25, Regex,&lt;br/&gt;or Keyword Search
+    Retrieval--&gt;&gt;SubLM: Documents
+
+  else Code Execution Path
+    RootLM-&gt;&gt;CodeExec: Python code
+    Note over CodeExec: Sandboxed execution&lt;br/&gt;with corpus access
+    CodeExec--&gt;&gt;SubLM: Execution results
+  end
+
+  SubLM--&gt;&gt;RootLM: Compressed summary + reflection
+
+  loop Until confident or max iterations
+    RootLM-&gt;&gt;RootLM: Select next action
+  end
+
+  RootLM--&gt;&gt;User: Final answer + citations
+</code></pre> <hr/> <h2 id="limitations">Limitations</h2> <p><strong>Small sample size</strong>: 20 queries x multiple runs is a good signal but not definitive. Scaling to the full 830-query benchmark is needed. <strong>Latency</strong>: Averaging 558 seconds (9.3 minutes) per query for hard cases. This works for research tasks but isn’t suitable for real-time applications.</p> <hr/> <h2 id="future-directions">Future Directions</h2> <p>The natural next step is exploring memory systems for successful paths, and anti-patterns. For example, when the agent discovers that “progressive refinement” works for academic paper queries, it should remember and reuse this pattern. To me, this is a version of “continual learning” that motivated the series of blog posts.</p> <p>This aligns with Anthropic’s <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills">Agent Skills</a> work and the <a href="https://arxiv.org/pdf/2509.25140">Memory Reasoning Bank</a> paper - encoding successful reasoning traces and retrieval strategies as reusable knowledge.</p> <hr/> <p><em>This work builds on <a href="https://alexzhang13.github.io/blog/2025/rlm/">Recursive Language Models</a> by Alex Zhang, Anthropic’s <a href="https://www.anthropic.com/engineering/code-execution-with-mcp">code execution research</a>, and the <a href="https://arxiv.org/html/2508.06600v1">BrowseComp Plus dataset</a>.</em></p> <p><em>Views are strictly my own. Experiments based only on public datasets. Code examples have been genericized to respect the BrowseComp Plus dataset policy (“BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN TEXT ONLINE”).</em></p> <p><em>Published: November 22, 2025</em></p>]]></content><author><name></name></author><category term="Search"/><category term="Reasoning"/><category term="Code Execution"/><category term="llm"/><category term="code-execution"/><category term="multi-hop"/><category term="browsecomp"/><category term="rlm"/><summary type="html"><![CDATA[This is Part 3 in an ongoing series on continual learning for LLM agents: from Reasoning Banks → Recursive Language Models → RLM + Code Execution.]]></summary></entry><entry><title type="html">Recursive Language Models reduce context rot and 2.5× accuracy on BrowseComp‑Plus (at 2.6× latency)</title><link href="https://tangbyron.github.io/blog/2025/recursive-language-models/" rel="alternate" type="text/html" title="Recursive Language Models reduce context rot and 2.5× accuracy on BrowseComp‑Plus (at 2.6× latency)"/><published>2025-11-09T00:00:00+00:00</published><updated>2025-11-09T00:00:00+00:00</updated><id>https://tangbyron.github.io/blog/2025/recursive-language-models</id><content type="html" xml:base="https://tangbyron.github.io/blog/2025/recursive-language-models/"><![CDATA[<h2 id="main-takeaway">Main takeaway</h2> <p>Building off of the great post on <a href="https://alexzhang13.github.io/blog/2025/rlm/">Recursive Language Models</a>, I ran a similar experiment, and found that RLM with sub-LM summarization and reflection achieved a 2.5X increase in accuracy (10% -&gt; 25%, using Gemini Flash 2.5) on <a href="https://arxiv.org/abs/2508.06600">BrowseComp Plus</a>, compared to a ReAct baseline using the same search tool (BM25).</p> <p>The key insight is that we are able to reduce context rot for the root-LM, by delegating document processing, summarization, and reflection to the sub-LM (depth == 1). Instead of the ReAct agent continuously appending documents and growing context at a rapid rate (10 documents per search, truncate to first 512 tokens, 15 iterations = 77K tokens), the sub-LM is able to limit context growth per iteration to ~500 tokens, a 10× reduction that significantly improves its ability to answer the multi-hop research question. Interestingly, document evidence recall was around the same for ReAct and RLM (~32%), further demonstrating that the improvement is from reducing context rot, rather than improving retrieval.</p> <p>Another key factor of reducing context rot is traversing the search more efficiently. I observed a 13% decrease in average number of searches per query from 8.95 in ReAct to 7.75 in RLM. From ablations, the sub‑LM’s reflections on the hypothesis and suggested query refinements were a significant step up from the simple tool outputs the root‑LM sees in ReAct.</p> <p>The downside is that the RLM process is roughly 2.6× slower (per‑query average of 203s vs 79s). Parallelization could help, but it’s not obviously a silver bullet given the sequential nature of multi‑hop research. Future experiments will combine RLM with a Memory Bank to reduce processing time and context.</p> <hr/> <h2 id="motivation">Motivation</h2> <p>I wrote about context rot and continual learning in the <a href="https://tangbyron.github.io/posts/anti-patterns-as-guardrails/">previous post</a>, so I won’t belabor the point. I did find that the BrowseComp Plus dataset is a perfect one for exploring this problem, at least on the text modality.</p> <hr/> <h2 id="dataset-browsecomp-plus">Dataset: BrowseComp Plus</h2> <p><a href="https://arxiv.org/html/2508.06600v1">BrowseComp Plus</a> (and the original <a href="https://openai.com/index/browsecomp/">BrowseComp</a>) is a multi-hop question answering benchmark designed to stress-test retrieval systems. It contains:</p> <ul> <li><strong>830 queries</strong> requiring cross-document synthesis</li> <li><strong>100,195 documents</strong> wide range of document length</li> <li><strong>~6.1 evidence docs, 2.9 gold docs, and ~76.3 hard negatives</strong> per query</li> </ul> <p>Shoutout to the authors for putting the dataset together, I found it very cool that answers are contained in multiple documents, and requires multi-hop search and reasoning. My initial attempts sent Gemini down deep rabbit holes and I ended up burning some $ on large context API calls. There’s a reason why major model releases like <a href="https://huggingface.co/moonshotai/Kimi-K2-Thinking">Kimi K2 Thinking</a> in Nov 2025 still reference the performance on this dataset.</p> <h3 id="synthetic-example">Synthetic Example</h3> <p>Per the dataset card’s policy (“BENCHMARK DATA SHOULD NEVER APPEAR AS PLAIN TEXT ONLINE” <a href="https://huggingface.co/datasets/Tevatron/browsecomp-plus">HF dataset card</a>), here’s a representative synthetic example (not from the benchmark):</p> <blockquote> <p><strong>query</strong>: “Identify the 2012–2016 sci‑fi short story that won a major award, is set on a tidally‑locked planet, and whose author later chaired the Nebula Awards.”</p> <p><strong>multi-hop challenges</strong>:</p> <ol> <li>Search for award-winning sci-fi stories (2012-2016)</li> <li>Filter by setting (tidally-locked planet)</li> <li>Cross-reference author’s later career (Nebula chair)</li> <li>Synthesize across 3+ documents with different constraints</li> </ol> </blockquote> <hr/> <h2 id="baseline-single-llm-call">Baseline: Single LLM call</h2> <p><strong>Setup</strong>: The simplest possible approach. Execute one BM25 search with k=20 documents, truncate each to the first 512 tokens, pass directly to Gemini 2.5 Flash, and ask for the final answer.</p> <p><strong>Results</strong>:</p> <ul> <li><strong>Accuracy: 0% (0/20 correct)</strong></li> <li>Evidence recall: 2%</li> <li>Average time: 118s per query</li> </ul> <p>Interestingly, with BM25 search using k=20, there are times that we retrieved the golden evidence docs. But even so, the model could not synthesize the final answer. Again showcasing the multi-hop nature of this dataset.</p> <hr/> <h2 id="experiment-1-react-baseline">Experiment 1: ReAct Baseline</h2> <h3 id="architecture">Architecture</h3> <p>The ReAct pattern (<a href="https://arxiv.org/abs/2210.03629">Yao et al., 2023</a>) enables iterative search through a simple loop: Reason → Act (tool call) → Observe (append results) → Repeat.</p> <pre><code class="language-mermaid">Query → Root LM
+         ↓
+    ┌────────────┐
+    │ Reasoning  │  Think about what to search
+    └─────┬──────┘
+          ↓
+    ┌────────────┐
+    │ Tool Call  │  Execute BM25 search
+    └─────┬──────┘
+          ↓
+    ┌────────────┐
+    │ Append     │  Add results to conversation
+    └─────┬──────┘
+          ↓
+    Loop back (max 15 iterations)
+</code></pre> <h3 id="implementation">Implementation</h3> <p>Kept it simple, no frameworks, just native Gemini SDK function calling in ~20 lines of core logic:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Core ReAct loop
+for iteration in range(max_iterations):
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=contents,  # Growing context from appending search results
+        config=types.GenerateContentConfig(
+            tools=[search_tool],  # BM25 function
+            system_instruction=REACT_SYSTEM_PROMPT,
+            tool_config=types.ToolConfig(
+                function_calling_config=types.FunctionCallingConfig(
+                    mode='AUTO'  # Let LLM decide when to call
+                )
+            )
+        )
+    )
+
+    if function_calls:
+        results = execute_search(...)
+        contents.append(...)  # Context accumulates here
+        continue
+    else:
+        return final_answer
+</code></pre></div></div> <h3 id="results">Results</h3> <p>Using <strong>Gemini 2.5 Flash</strong> (knowledge cutoff of Jan 2025, pre-dating BrowseComp Plus release to avoid contamination):</p> <ul> <li><strong>Accuracy: 10.00% (2/20 correct)</strong></li> <li>Evidence recall: 32% (15x better than single search!)</li> <li>Average 8.95 searches per query</li> <li>Average 9.8 iterations</li> <li>Average time: 79.25s per query</li> </ul> <p>It was encouraging to see non‑zero accuracy (was worth celebrating at the time)! Somewhat matches the 15.54% reported in the original <a href="https://arxiv.org/abs/2508.06600">BrowseComp Plus</a> paper. I’m sure there was some more prompt tuning for the paper, but since that’s not the primary objective of this experiment, I just went with a generic deep research prompt.</p> <p>I repeated the ReAct baseline a few times, the key issue is the linear context accumulation, since each iteration simply appends the search results to the context:</p> <ul> <li>Iteration 1: 5,120 tokens (10 docs × 512 tokens)</li> <li>Iteration 5: 25,600 tokens</li> <li>Iteration 15 (max): 76,800 tokens</li> </ul> <p>While this is well below the 1 million token context window for Gemini Flash 2.5, I observed that the root-LM was getting bogged down from the ever increasing context, and it would repeat very similar search queries with a few keyword differences, and prematurely “give up” after 10+ iterations.</p> <hr/> <h2 id="experiment-2-recursive-language-model">Experiment 2: Recursive Language Model</h2> <h3 id="architecture-1">Architecture</h3> <p>To reduce context rot on the root-LM, we introduce sub-LM at depth == 1</p> <pre><code class="language-mermaid">sequenceDiagram
+  participant User
+  participant RootLM as Root‑LM
+  participant Search as BM25
+  participant SubLM as Sub‑LM
+
+  User-&gt;&gt;RootLM: Question
+  RootLM-&gt;&gt;Search: Query (k=10)
+  Search--&gt;&gt;RootLM: 10×512 tokens per doc
+  RootLM-&gt;&gt;SubLM: Hypothesis + docs
+  SubLM--&gt;&gt;RootLM: ~500 token summary + reflection
+  RootLM-&gt;&gt;Search: Refined query
+  loop until confident or budget hit
+    Search--&gt;&gt;RootLM: New docs
+    RootLM-&gt;&gt;SubLM: Compress &amp; Reflect
+  end
+  RootLM--&gt;&gt;User: Final answer (+ cited docids)
+</code></pre> <p>The sub-LM is responsible for reviewing all of the documents, comparing it against the original query from BrowseComp, the search query and hypothesis from the root-LM. It’s able to summarize the information, reflect, and provide feedback to the root‑LM on how to update its query. It condenses the output to ~500 tokens, which means 10X decrease in tokens for the root-LM, as it iterates through the research process.</p> <h3 id="root-lm-and-sub-lm-interaction">Root-LM and Sub-LM interaction</h3> <p>In addition to the obvious benefits of compression, I found that the root/sub LM interaction to be interesting and beneficial. Specifically, feedback from the sub-LM was critical in introducing new search patterns in the root-LM, which prevented the root-LM from getting “stuck” in a single train of thought.</p> <p>The root-LM articulates its hypothesis every turn using a structured 5-step format:</p> <p><strong>Process (every turn):</strong></p> <ol> <li><strong>Observations:</strong> Review question, summarize what new signal the latest evidence added.</li> <li><strong>Evidence Gaps:</strong> List what’s still missing to answer confidently.</li> <li><strong>Leading Hypothesis:</strong> State your current best hypothesis in one clear sentence.</li> <li><strong>Search Plan:</strong> Choose your next search query. Include both the query string and the rationale for why it fills the gaps.</li> <li><strong>Final Answer:</strong> When evidence converges and you’re confident, provide an answer with document IDs and confidence (0-100).</li> </ol> <p>The sub-LM receives this hypothesis and provides feedback:</p> <figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">build_feedback_prompt_v2</span><span class="p">(...,</span> <span class="n">leading_hypothesis</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">Build hypothesis-aware sub-LM prompt with reflection</span><span class="sh">"""</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"""</span><span class="s">
+    ORIGINAL QUESTION: </span><span class="si">{</span><span class="n">original_query</span><span class="si">}</span><span class="s">
+    CURRENT SEARCH: </span><span class="sh">"</span><span class="si">{</span><span class="n">search_query</span><span class="si">}</span><span class="sh">"</span><span class="s">
+
+    LEADING HYPOTHESIS FROM THE ANALYST:
+    </span><span class="se">\"\"\"</span><span class="si">{</span><span class="n">leading_hypothesis</span><span class="si">}</span><span class="se">\"\"\"</span><span class="s">
+
+    Your goals:
+    1. Review all documents and return key findings summary including:
+       - Key facts that support or contradict the hypothesis
+       - Detailed relationships and connections between entities
+
+    2. For highly relevant documents, conduct a deep dive into the text.
+
+    3. Suggest how the analyst should update the hypothesis if documents
+       provide strong contradictory evidence.
+
+    4. Note any follow-up keywords or entities the analyst should
+       consider next.
+
+    After your document analysis, provide:
+
+    **Suggested Next BM25 Queries:**
+    - Query 1: </span><span class="sh">"</span><span class="s">...</span><span class="sh">"</span><span class="s">
+    - Query 2: </span><span class="sh">"</span><span class="s">...</span><span class="sh">"</span><span class="s">
+    - Query 3: </span><span class="sh">"</span><span class="s">...</span><span class="sh">"</span><span class="s">
+    </span><span class="sh">"""</span></code></pre></figure> <h3 id="results-1">Results</h3> <p>Accuracy of 25%, a roughly 2.5X improvement over ReAct. A huge caveat is that this is only on 20 queries, repeated over multiple runs of the experiment. It’s a bit expensive to run these experiments (already used up about $100 of Gemini credits), and there’s more low hanging fruits to explore in the RLM framework, so I’ll stop at 20 for now.</p> <table> <thead> <tr> <th>Metric</th> <th>Single BM25</th> <th>ReAct</th> <th>RLM</th> <th>Change (ReAct→RLM)</th> </tr> </thead> <tbody> <tr> <td><strong>Accuracy</strong></td> <td>0.00%</td> <td>10.00%</td> <td><strong>25.00%</strong></td> <td><strong>+150%</strong></td> </tr> <tr> <td><strong>Evidence Recall</strong></td> <td>2.08%</td> <td>31.64%</td> <td>32.24%</td> <td>+1.9%</td> </tr> <tr> <td><strong>Avg Searches</strong></td> <td>1</td> <td>8.95</td> <td>7.75</td> <td>-13.4%</td> </tr> <tr> <td><strong>Avg Confidence</strong></td> <td>-</td> <td>39.75%</td> <td>51.25%</td> <td>+28.9%</td> </tr> <tr> <td><strong>Avg Time (s)</strong></td> <td>118</td> <td>79</td> <td>203</td> <td>+156.8%</td> </tr> </tbody> </table> <p>It was great to see the accuracy increase, and very interesting that it wasn’t due to evidence recall, which was roughly about the same between ReAct and RLM. Rather, the context reduction from summarization, and also getting to the evidence with fewer iterations (-13%), means a 10X+ reduction in context for the root-LM, which significantly helped with accuracy.</p> <hr/> <h2 id="limitations--future-work">Limitations &amp; Future Work</h2> <p>Small sample size is the obvious one, I’ll increase this in the near future, once we explore the following augmentations to RLM:</p> <ol> <li>for the apples to apples comparison between ReAct and RLM, we are just using the BM25 search tool. Adding Regex, Word Search, and Semantic search will be fast follows</li> <li>for now, the tools are static, what if we allow the root-LM dynamically create tools (code execution) that spin up sub-LMs? what if we allow depth &gt; 1, and the sub-LMs can then dynamically create and execute additional actions?</li> <li>As mentioned in the <a href="https://tangbyron.github.io/posts/anti-patterns-as-guardrails/">previous post</a>, as we give more freedom to the RLM to dynamically execute, it’ll surely come upon happy/unhappy paths. What if we encode these as memory, and allow the RLM to also dynamically retrieve from this memory bank for past reasoning/execution traces?</li> </ol> <hr/> <p><em>This work was inspired by <a href="https://alexzhang13.github.io/blog/2025/rlm/">Recursive Language Models</a> by Alex Zhang and builds on the <a href="https://arxiv.org/html/2508.06600v1">BrowseComp Plus dataset</a>.</em></p> <p><em>Views are strictly my own. Experiments based only on public datasets.</em></p> <p><em>Published: November 9, 2025</em></p>]]></content><author><name></name></author><category term="Search"/><category term="Reasoning"/><category term="llm"/><category term="retrieval"/><category term="multi-hop"/><category term="browsecomp"/><summary type="html"><![CDATA[Main takeaway]]></summary></entry><entry><title type="html">Exploring Continuous Learning: Reasoning Bank + Recursive Language Models</title><link href="https://tangbyron.github.io/blog/2025/anti-patterns-as-guardrails/" rel="alternate" type="text/html" title="Exploring Continuous Learning: Reasoning Bank + Recursive Language Models"/><published>2025-10-27T00:00:00+00:00</published><updated>2025-10-27T00:00:00+00:00</updated><id>https://tangbyron.github.io/blog/2025/anti-patterns-as-guardrails</id><content type="html" xml:base="https://tangbyron.github.io/blog/2025/anti-patterns-as-guardrails/"><![CDATA[<h2 id="tldr">TLDR</h2> <p>A tiny <a href="https://arxiv.org/html/2509.25140v1">Reasoning Bank</a> of success and failure reasoning strategies on PubMedQA nudged accuracy from 73% → 77%. The lift was strongest when both success and failure strategies were present, reaching 84% in that subset. No fine‑tuning, just retrieval of distilled memories.</p> <hr/> <h2 id="motivation">Motivation</h2> <p>2025 gave us million token context windows, and a new failure mode in <a href="https://research.trychroma.com/context-rot">context rot</a>. Retrieval is as important as ever (I’m avoiding RAG here, as I agree with Jeff Huber’s point that we should just call it retrieval), and I’m interested in exploring memory and reasoning, vs just stuffing prompts with relevant chunks.</p> <p>So as of late Oct 2025, expanding the context window of LLMs, and in some ways continual learning for LLMs, is a trending topic. I’m still reading and learning, and I’d bucket recent papers I’ve come across (thanks to https://www.alphaxiv.org/) into three categories (these are my working buckets as I learn and build more, not meant to be an academic taxonomy):</p> <ol> <li>architectural changes - eg <a href="https://arxiv.org/abs/2502.11089">Native Sparse Attention</a> for long-horizon efficiency</li> <li>parametric updates - eg online SFT/RL such as <a href="https://arxiv.org/abs/2510.15103">Sparse Memory Finetuning</a>, which allows continuous knowledge updates without impacting generalization</li> <li>“outer loop” engineering - building architecture (or scaffold?) around the llm, eg <a href="https://www.arxiv.org/abs/2510.18866">LightMem</a>, <a href="https://alexzhang13.github.io/blog/2025/rlm/">Recursive Language Models</a>, <a href="https://arxiv.org/html/2509.25140v1">Reasoning Bank</a>, and many others</li> </ol> <p>I was especially interested in recursive language model, and reasoning bank, because it seems to me that they align well with the <a href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html">bitter lesson</a>:</p> <p><em>“One thing that should be learned from the bitter lesson is the great power of general purpose methods, of methods that continue to scale with increased computation even as the available computation becomes very great. The two methods that seem to scale arbitrarily in this way are *search and learning*.”</em></p> <p>In the case of Recursive Language Models, we give the AI Agent full autonomy to <em>search</em> in whatever way it deems. We are not crafting tools with specific instructions on how to use them, which <a href="https://www.reddit.com/r/Anthropic/comments/1nkdtiw/mcp_server_context_rot/">clog up context</a>. Instead, allowing the LLM an execution environment to create whatever python code it deems necessary, and spawn up additional LLM processes to gather the required information.</p> <p>For Reasoning Bank, we are letting the LLM reflect and <em>learn</em> from its own reasoning traces on both success, and more importantly, the incorrect predictions. Unlike many parameter-update methods which often depend on preference winners or scalar rewards, a memory layer allows the LLM to reflect when it got something wrong, and try to distill the “why”.</p> <p>For this post, we will focus on the PubMedQA dataset, which has fairly limited context windows, so naturally implementing Recursion did not help with performance. We’ll save the combo of RLM+RB for another post with experiments on <a href="https://arxiv.org/abs/2508.06600">BrowseComp Plus dataset</a>.</p> <hr/> <h2 id="core-idea-around-reasoning-bank">Core idea around Reasoning Bank</h2> <p>When humans learn complex tasks, we benefit from two types of examples:</p> <ol> <li><strong>Success patterns</strong>: “Here’s how to solve this correctly”</li> <li><strong>Failure patterns</strong>: “I got this wrong, here’s what I should watch out for next time”</li> </ol> <p>Most AI systems only learn from successes. But what if the LLM can learn from both success and failures? And perhaps even more importantly, reflect on why it made a mistake in the first place, so the learnings are generalizable?</p> <hr/> <h2 id="experiment">Experiment</h2> <ul> <li><strong>Dataset</strong>: <a href="https://huggingface.co/datasets/qiaojin/PubMedQA">PubMedQA</a></li> <li><strong>Task</strong>: Answer yes/no/maybe based on research abstracts</li> <li><strong>LLM</strong>: Gemini 2.5 Flash</li> <li><strong>Memory Reasoning Bank</strong>: 200 training examples → 144 success patterns + 56 failure-patterns</li> <li><strong>Retrieval of Memory</strong>: Semantic similarity matching via embeddings</li> <li><strong>Train/Test</strong>: Randomly sample, build (“train”) the Reasoning Bank on 200 examples, inference on 100 examples</li> <li><strong>Comparison</strong>: Vanilla LLM prediction: 73% accuracy, LLM+MRB: 77% accuracy. Across 10 independent random splits/seeds, the memory‑augmented setup delivered a consistent ~4‑point lift; small but stable, not a one‑off.</li> </ul> <hr/> <h2 id="learning-from-failure">Learning from Failure</h2> <p>A failure-pattern is a structured analysis of a reasoning and prediction failure</p> <h3 id="extraction">Extraction</h3> <p>When the LLM produces an incorrect answer, an LLM Judge extracts a failure-pattern with these components:</p> <ol> <li><strong>Error Identification</strong>: What specific reasoning error occurred?</li> <li><strong>Warning Signals</strong>: What indicators should have been noticed?</li> <li><strong>Correct Approach</strong>: How should the reasoning have proceeded?</li> <li><strong>Generalizable Lessons</strong>: What broader takeaways apply to similar questions?</li> </ol> <p><strong>LLM Judge Prompt</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Your task: analyze this failed reasoning trace and extract one failure-pattern
+(common reasoning error) as a cautionary example.
+
+Question: {query}
+Reasoning trace: {reasoning}
+Outcome: failure
+Ground truth: {correct_answer}
+Model answer: {wrong_answer}
+
+Extract a failure-pattern with:
+1. Title: Short name for the error (e.g., "Overgeneralization from Limited Evidence")
+2. Description: One-sentence summary of when this error occurs
+3. Content: 4-component analysis:
+   - ERROR: What reasoning mistake was made
+   - WARNING SIGNALS: What should have raised concerns
+   - CORRECT APPROACH: How to reason properly
+   - LESSONS: Generalizable takeaways
+4. Tags: Domain/task filters (["pubmedqa", "yes_no_qa", ...])
+5. Outcome: "failure"
+</code></pre></div></div> <p><strong>Example failure-pattern Output</strong>:</p> <p>JSON Structure:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+  "title": "Overgeneralization from Limited Evidence",
+  "description": "Use as warning when tendency to dismiss feasibility based solely on preliminary/limited data",
+  "content": "...",
+  "tags": ["pubmedqa", "yes_no_qa", "feasibility_study"],
+  "outcome": "failure"
+}
+</code></pre></div></div> <p>Content Field (formatted):</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ERROR: Dismissed feasibility of intervention based on limited pilot evidence,
+failing to recognize that feasibility studies are designed to test practicality,
+not efficacy.
+
+WARNING SIGNALS:
+- Question asks about feasibility, not efficacy
+- Study explicitly states "feasibility study"
+- Evidence shows completion rates and participant feedback
+
+CORRECT APPROACH:
+1. Distinguish feasibility questions from efficacy questions
+2. Recognize that feasibility focuses on practical implementation
+3. Evaluate completion rates and participant acceptance
+4. Answer 'yes' for feasibility even if efficacy unclear
+
+LESSONS: Don't apply efficacy standards to feasibility questions.
+Limited evidence can still demonstrate feasibility.
+</code></pre></div></div> <hr/> <h3 id="injecting-reasoning-memories">Injecting Reasoning Memories</h3> <p><strong>Purpose</strong>: Inject <strong>both</strong> success patterns AND failure-patterns with distinct formatting</p> <p><strong>Code Implementation</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Inject success pattern (if retrieved)
+if strategies and len(strategies) &gt; 0:
+    prompt += "\n\n" + "="*60 + "\n"
+    prompt += "RELEVANT STRATEGY (from similar past questions):\n"
+    prompt += "="*60 + "\n\n"
+    strategy = strategies[0]
+    prompt += f"{strategy.title}\n"
+    prompt += f"When to use: {strategy.description}\n"
+    prompt += f"Approach:\n{strategy.content}\n\n"
+
+# Inject failure-pattern (if retrieved) with warning formatting
+if anti_patterns and len(anti_patterns) &gt; 0:
+    prompt += "="*60 + "\n"
+    prompt += "⚠️  ANTI-PATTERN TO AVOID:\n"
+    prompt += "="*60 + "\n\n"
+    anti = anti_patterns[0]
+    prompt += f"{anti.title}\n"
+    prompt += f"Common mistake: {anti.description}\n"
+    prompt += f"Analysis:\n{anti.content}\n\n"
+
+# Closing guidance
+if strategies or anti_patterns:
+    prompt += "="*60 + "\n"
+    prompt += "Consider these patterns when answering.\n"
+    prompt += "="*60 + "\n\n"
+</code></pre></div></div> <p><strong>Prompt with injected Reasoning Memories</strong>:</p> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Based on the provided medical research context, answer the following
+question with 'yes', 'no', or 'maybe':
+
+Question: Aromatase inhibitor-related musculoskeletal symptoms: is preventing
+them with exercise feasible?
+
+Context:
+[... medical abstract about feasibility study ...]
+
+============================================================
+RELEVANT STRATEGY (from similar past questions):
+============================================================
+
+Evaluate Feasibility Study Outcomes
+When to use: Use when assessing practical implementation feasibility
+Approach:
+1. Check completion rates and participant retention
+2. Evaluate acceptability metrics
+3. Distinguish feasibility from efficacy
+4. Answer based on implementation success
+
+============================================================
+ANTI-PATTERN TO AVOID
+============================================================
+
+Overgeneralization from Limited Evidence
+Common mistake: Dismissing feasibility based on limited pilot data
+
+Analysis:
+ERROR: Dismissed feasibility of intervention based on limited pilot
+evidence, failing to recognize that feasibility studies test practicality,
+not efficacy.
+
+WARNING SIGNALS:
+- Question asks about feasibility, not efficacy
+- Study explicitly states "feasibility study"
+- Evidence shows completion rates and participant feedback
+
+CORRECT APPROACH:
+1. Distinguish feasibility questions from efficacy questions
+2. Recognize that feasibility focuses on practical implementation
+3. Evaluate completion rates and participant acceptance
+4. Answer 'yes' for feasibility even if efficacy unclear
+
+LESSONS: Don't apply efficacy standards to feasibility questions.
+Limited evidence can still demonstrate feasibility.
+
+============================================================
+Consider these patterns when answering.
+============================================================
+
+Please analyze the context carefully and provide your answer as one
+word: yes, no, or maybe.
+</code></pre></div></div> <p>This structure allows flexibility on the presence or absence of memories. One important finding is that ~19% of examples had both a successful and a failure pattern extracted, and those yielded 84% accuracy (73% baseline for vanilla LLM predictions).</p> <hr/> <h3 id="inference-flow">Inference flow</h3> <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Input
+  │
+Retriever ──► Top‑k Memories
+  │              ├─ Strategy: "Evaluate Feasibility (completion, retention...)"
+  │              └─ Anti‑pattern: "Overgeneralize from limited evidence"
+  │
+Prompt Composer
+  │   (inject strategy/anti‑pattern blocks)
+  ▼
+LLM ⇢ answer (yes/no/maybe)
+  │
+Judge (optional) ──► new memory (strategy or anti‑pattern)
+</code></pre></div></div> <hr/> <h2 id="limitations--next-steps">Limitations &amp; Next Steps</h2> <p>This is 1 of N posts on continual learning, I just wanted to document learnings so far.</p> <h3 id="current-limitations">Current Limitations</h3> <ol> <li>only tested on PubMedQA for now</li> <li>while everything else about the experiment is very much aligned with bitter lesson’s thesis of leaning into search and learning, there is still a “hand crafted” parameter of embedding similarity at the retrieval step</li> </ol> <h3 id="whats-next">What’s Next</h3> <ol> <li>the reasoning bank was built (“trained”, but not in the classical ML sense) on ~200 examples, what if we scaled it to more?</li> <li>as successful and failure patterns increased, is there a way to “consolidate” (<a href="https://arxiv.org/abs/2510.18866?utm_source=chatgpt.com">LightMem</a>) the memories so that the reasoning traces and failure reflections are even more generalizable and helpful?</li> <li>can the “training” step of building up the reasoning bank also be more iterative, in that example 10 references reason traces developed from examples 1-9, and potentially even updates the memories given some sort of ground truth label?</li> <li>I’m curious how this approach compares to using <a href="https://arxiv.org/abs/2507.19457">GEPA</a>. I intentionally did not tune the prompt (thanks Claude) for this current experiment</li> <li>very curious on trying the combo of RLM + MRB on BrowserComp Plus, as reasoning memories on how the LLM recursively found solutions to complex and long context could be incredibly valuable</li> </ol> <hr/> <p><em>This work was inspired by <a href="https://arxiv.org/html/2509.25140v1">ReasoningBank</a>, <a href="https://alexzhang13.github.io/blog/2025/rlm/">Recursive Language Models</a> and builds on the <a href="https://pubmedqa.github.io/">PubMedQA dataset</a>.</em></p> <p><em>Views are strictly my own. Experiments based only on public datasets.</em></p> <p><em>Published: October 27, 2025</em></p>]]></content><author><name></name></author><category term="Memory"/><category term="Reason"/><category term="llm"/><category term="memory"/><category term="reasoning"/><category term="pubmedqa"/><summary type="html"><![CDATA[TLDR]]></summary></entry></feed>

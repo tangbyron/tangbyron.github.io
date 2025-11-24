@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://tangbyron.github.io/sitemap.xml
