@@ -16,7 +16,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/blog/";
           },
-        },{id: "post-recursive-language-models-code-execution-60-accuracy-on-browsecomp-plus-no-embeddings",
+        },{id: "post-context-engineering-for-agents-three-levels-of-disclosure",
+        
+          title: "Context Engineering for Agents: Three Levels of Disclosure",
+        
+        description: "",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2025/context-engineering-in-practice/";
+          
+        },
+      },{id: "post-recursive-language-models-code-execution-60-accuracy-on-browsecomp-plus-no-embeddings",
         
           title: "Recursive Language Models + Code Execution: 60% accuracy on BrowseComp Plus (no embeddings)...",
         
