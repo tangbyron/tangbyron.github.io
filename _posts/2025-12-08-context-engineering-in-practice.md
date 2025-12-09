@@ -13,6 +13,7 @@ mermaid: true
 ## Main takeaway
 
 Sharing a few tips from implementing a tool-heavy agent that operates on a lot of data using Claude Agent SDK:
+
 1. shield the primary agent using both client-side filtering and server-side context editing (Anthropic’s [`context_management`](https://platform.claude.com/docs/en/build-with-claude/context-editing)).
 2. design for three levels of disclosure, from least to most: 1) the primary agent, 2) user, 3) logs. Managing all three are important to allow for efficiency (agent), transparency (user), and faster iteration cycles (logs).
 3. use the [token count API](https://docs.anthropic.com/en/docs/build-with-claude/token-counting) to estimate the # of tokens that would be sent to the primary agent. Print out the progress bar as you iterate, and it doubles as visual feedback to the user on how much context they've used.
@@ -31,6 +32,7 @@ Production is different. First, a shoutout to Claude Haiku (and yes of course Op
 
 The goal is to ensure the primary agent only remembers what would be helpful to reason about the next step. Aggressive filtering is key here.
 It's also important to remember that there are two important other parties in the system:
+
 - the user wants transparency on what's being done, and also see outputs like charts or forecasts
 - logs are also critical as you iterate on adding more tools and expanding the use case. This is especially true when asking the primary agent to leverage [code execution](https://www.anthropic.com/engineering/code-execution-with-mcp) chain tool calls. Reviewing the logs of errors is key to refining the sandbox env, tool descriptions, and system prompt.
 
@@ -82,6 +84,7 @@ async with client.beta.messages.stream(
 I’m triggering at ~50% of capacity here to leave headroom. If your tools can return very large payloads in a single turn (e.g., 100K+ tokens of web search results), you may want to trigger earlier.
 
 When the trigger fires, old tool results are replaced with a placeholder:
+
 ```
 [Tool result cleared to manage context length]
 ```
@@ -90,14 +93,14 @@ Claude understands this. If it needs that data again, it can re-call the tool.
 
 ### Layer 2: Client-Side Filtering
 
-Server-side clearing only helps if your request is *already under* 200K tokens. For tools that produce massive output, you need client-side filtering before adding to conversation history.
+Server-side clearing only helps if your request is _already under_ 200K tokens. For tools that produce massive output, you need client-side filtering before adding to conversation history.
 You could also enable client-side [Compaction](https://platform.claude.com/docs/en/build-with-claude/context-editing#using-compaction), which summarizes and replaces the conversation history. That’s super useful as a coarse control that's intentionally lossy, and operates at session level. For tools that have known large results, I'd prefer to apply the methods below:
 
-| Scenario | Approach | When to Use | Example |
-|----------|----------|-------------|---------|
+| Scenario                        | Approach                    | When to Use                                              | Example                                          |
+| ------------------------------- | --------------------------- | -------------------------------------------------------- | ------------------------------------------------ |
 | Web search returns 100K+ tokens | **Sub-agent summarization** | Content has semantic meaning agent needs to reason about | Spawn sub-agent to synthesize into 2-3 sentences |
-| Chart generation outputs base64 | **Simple filtering** | Content is binary/visual; agent just needs confirmation | Replace with `[CHART_GENERATED]` |
-| Code writes CSV to disk | **Pointer storage** | Content is regenerable; agent can reload on demand | Store `file_id` only, fetch if needed |
+| Chart generation outputs base64 | **Simple filtering**        | Content is binary/visual; agent just needs confirmation  | Replace with `[CHART_GENERATED]`                 |
+| Code writes CSV to disk         | **Pointer storage**         | Content is regenerable; agent can reload on demand       | Store `file_id` only, fetch if needed            |
 
 For [web search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool), I use another LLM with isolated context to compress 100K+ tokens down to 2-3 sentences. This pattern is described in detailed in my [Recursive Language Model](https://tangbyron.github.io/posts/recursive-lm-code-execution/) post.
 
@@ -126,7 +129,7 @@ def _filter_tool_result_for_history(tool_name: str, result: dict) -> dict:
         }
 ```
 
-I actually hit a tricky bug on this. I had this filtering but still hit overflow after chart generation. Turns out the sandbox printed the entire output dict (including base64) to stdout for IPC—so there were *two copies* of the chart data. Make sure to remove stdout from agent context entirely (307KB → 59 bytes). Stdout still goes to logs.
+I actually hit a tricky bug on this. I had this filtering but still hit overflow after chart generation. Turns out the sandbox printed the entire output dict (including base64) to stdout for IPC—so there were _two copies_ of the chart data. Make sure to remove stdout from agent context entirely (307KB → 59 bytes). Stdout still goes to logs.
 
 ---
 
@@ -134,10 +137,10 @@ I actually hit a tricky bug on this. I had this filtering but still hit overflow
 
 Tracking tokens in memory is critical to optimizing the overall agent. Two ways to track it:
 
-| Method                           | When to Use      |
-|----------------------------------|------------------|
-| `client.messages.count_tokens()` | Before API call  |
-| `response.usage.input_tokens`    | After API call   |
+| Method                           | When to Use     |
+| -------------------------------- | --------------- |
+| `client.messages.count_tokens()` | Before API call |
+| `response.usage.input_tokens`    | After API call  |
 
 The [Token Counting API](https://docs.anthropic.com/en/docs/build-with-claude/token-counting) mentioned that its an estimate, but I've found it to be very accurate. The pre-flight counting detects overflow before it happens:
 
@@ -154,7 +157,7 @@ warning = "critical" if usage_pct >= 0.9 else "warning" if usage_pct >= 0.75 els
 ## Results
 
 Here’s a realistic scenario: the user asks  
-*"Analyze this dataset, search for relevant supporting evidence online, formulate predictions and forecasts, summarize key insights, and create visualizations."*
+_"Analyze this dataset, search for relevant supporting evidence online, formulate predictions and forecasts, summarize key insights, and create visualizations."_
 
 ```text
 TOOL SEQUENCE & TOKEN USAGE (CLAUDE HAIKU 4.5 – 200K LIMIT)
@@ -205,10 +208,11 @@ In this trace, filtering reduced peak context from ~235K to ~26K tokens, an ~89%
 
 ## Key Takeaways
 
-Protect the primary agent! 
-- Use token count API to visualize exactly how much context is in memory. 
-- Be clear on where you are sending stdout from the code execution sandbox. 
-- Apply client and server side filtering. 
+Protect the primary agent!
+
+- Use token count API to visualize exactly how much context is in memory.
+- Be clear on where you are sending stdout from the code execution sandbox.
+- Apply client and server side filtering.
 - Think about disclosure on three levels of: agent, user, logs.
 
 ---
