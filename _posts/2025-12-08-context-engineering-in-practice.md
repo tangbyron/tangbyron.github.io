@@ -34,7 +34,7 @@ The goal is to ensure the primary agent only remembers what would be helpful to 
 It's also important to remember that there are two important other parties in the system:
 
 - the user wants transparency on what's being done, and also see outputs like charts or forecasts
-- logs are also critical as you iterate on adding more tools and expanding the use case. This is especially true when asking the primary agent to leverage [code execution](https://www.anthropic.com/engineering/code-execution-with-mcp) chain tool calls. Reviewing the logs of errors is key to refining the sandbox env, tool descriptions, and system prompt.
+- logs are also critical as you iterate on adding more tools and expanding the use case. This is especially true when asking the primary agent to leverage [code execution](https://www.anthropic.com/engineering/code-execution-with-mcp) to chain multiple tool calls. Reviewing the logs of errors is key to refining the sandbox env, tool descriptions, and system prompt.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -102,7 +102,8 @@ You could also enable client-side [Compaction](https://platform.claude.com/docs/
 | Chart generation outputs base64 | **Simple filtering**        | Content is binary/visual; agent just needs confirmation  | Replace with `[CHART_GENERATED]`                 |
 | Code writes CSV to disk         | **Pointer storage**         | Content is regenerable; agent can reload on demand       | Store `file_id` only, fetch if needed            |
 
-For [web search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool), I use another LLM with isolated context to compress 100K+ tokens down to 2-3 sentences. This pattern is described in detailed in my [Recursive Language Model](https://tangbyron.github.io/posts/recursive-lm-code-execution/) post.
+#### Web search
+For [web search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool), I use another LLM with isolated context to compress 100K+ tokens down to 2-3 sentences. This pattern is described in detailed in my [Recursive Language Model](https://tangbyron.github.io/blog/2025/recursive-lm-code-execution/) post.
 
 ```python
 async def execute_web_research(query: str) -> dict:
@@ -117,6 +118,7 @@ async def execute_web_research(query: str) -> dict:
     return {"summary": extract_text(response), "sources": urls}
 ```
 
+#### Visualizations
 For charts generated from code execution, the three levels of disclosure work like this: the sandbox saves the PNG to a temp file and returns base64. The **UI** streams the full image to the user. The **agent** only sees `[CHART_GENERATED]`. The **logs** capture the full payload for debugging.
 
 ```python
@@ -208,12 +210,11 @@ In this trace, filtering reduced peak context from ~235K to ~26K tokens, an ~89%
 
 ## Key Takeaways
 
-Protect the primary agent!
-
+Protect the primary agent by thinking through context on three levels of: agent, user, logs.
 - Use token count API to visualize exactly how much context is in memory.
 - Be clear on where you are sending stdout from the code execution sandbox.
+- Leverage Sub-LMs to summarize large tool results
 - Apply client and server side filtering.
-- Think about disclosure on three levels of: agent, user, logs.
 
 ---
 

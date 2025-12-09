@@ -1,9 +1,10 @@
 ---
 layout: about
 title: about
-permalink: /
+permalink: /about/
 subtitle: "Capturing learnings from experiments and papers"
-nav: false
+nav: true
+nav_order: 2
 
 profile:
   align: right

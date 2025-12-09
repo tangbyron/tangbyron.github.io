@@ -15,6 +15,7 @@
 {% endif %}
 
 {% capture author_name %}{{ site.first_name }}{% if site.middle_name %} {{ site.middle_name }}{% endif %} {{ site.last_name }}{% endcapture %}
+{% assign is_home_page = page.url == '/' or page.url == '/index.html' %}
 
 <!-- Standard metadata -->
 <meta charset="utf-8">
@@ -26,9 +27,9 @@
   {% else %}
     {% capture title %}{{ site.title }}{% endcapture %}
   {% endif %}
-  {% if page.url == '/blog/index.html' %}
+  {% if is_home_page %}
     {{ page.title }} | {{ title }}
-  {% elsif page.title != 'blank' and page.url != '/' %}
+  {% elsif page.title != 'blank' and is_home_page == false %}
     {% if page.title == null or page.title == '' %}
       {{ page.date | date: '%Y' }} | {{ title }}
     {% else %}
@@ -45,7 +46,7 @@
 {% endif %}
 
 {% assign is_blog_post = false %}
-{% if page.url != '/blog/index.html' and page.url contains '/blog/' %}
+{% if is_home_page == false and page.url contains '/blog/' %}
   {% unless page.url contains '/tag/' or page.url contains '/category/' %}
     {% assign is_blog_post = true %}
   {% endunless %}

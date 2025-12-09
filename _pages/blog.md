@@ -1,9 +1,8 @@
 ---
 layout: page
-permalink: /blog/
+permalink: /
 title: blog
-nav: true
-nav_order: 1
+nav: false
 pagination:
   enabled: true
   collection: posts
