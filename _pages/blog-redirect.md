@@ -2,6 +2,7 @@
 layout: none
 permalink: /blog/
 ---
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -16,4 +17,3 @@ permalink: /blog/
     </p>
   </body>
 </html>
-
