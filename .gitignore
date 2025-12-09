@@ -12,3 +12,6 @@ node_modules/
 vendor
 .idea
 .venv
+
+CLAUDE.md
+.cursor/
