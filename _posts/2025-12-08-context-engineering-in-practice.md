@@ -36,20 +36,7 @@ It's also important to remember that there are two important other parties in th
 - the user wants transparency on what's being done, and also see outputs like charts or forecasts
 - logs are also critical as you iterate on adding more tools and expanding the use case. This is especially true when asking the primary agent to leverage [code execution](https://www.anthropic.com/engineering/code-execution-with-mcp) to chain multiple tool calls. Reviewing the logs of errors is key to refining the sandbox env, tool descriptions, and system prompt.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              THREE LEVELS OF DISCLOSURE                         │
-│                                                                 │
-│   LOGS            UI/USER          PRIMARY AGENT                │
-│   (most)          (medium)         (least)                      │
-│   ──────────      ────────────     ──────────────               │
-│   Full stdout     Full chart PNG   "[CHART_GENERATED]"          │
-│   Raw payloads    All web results  "Summary: pricing 3-8%"      │
-│   Token counts    Complete data    Filtered snapshot            │
-│                                                                 │
-│   → Debug speed   → Transparency   → Efficiency                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+![Three levels of disclosure diagram](/assets/img/posts/2025-12-08-context-three-levels-disclosure.jpg)
 
 ---
 
